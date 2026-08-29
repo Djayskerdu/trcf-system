@@ -1,24 +1,20 @@
 // /api/storage.js
 // Vercel serverless function that acts as a tiny shared key-value store for
-// Systems Hub, backed by a free Upstash Redis database.
+// Systems Hub, backed by a Google Sheet via a Google Apps Script web app.
 //
 // SETUP (one-time):
-//   1. Go to https://vercel.com/dashboard, open your trcf-system project.
-//   2. Click the "Storage" tab -> "Create Database" -> choose "Upstash" ->
-//      "Redis" (free tier is plenty for this). Connect it to this project.
-//      This automatically creates two environment variables for you:
-//        UPSTASH_REDIS_REST_URL
-//        UPSTASH_REDIS_REST_TOKEN
-//      (Alternative: create the database yourself at https://upstash.com,
-//      then add those two values manually under Project Settings ->
-//      Environment Variables in Vercel.)
-//   3. Redeploy the project (Vercel -> Deployments -> "Redeploy") so the
-//      function picks up the new environment variables.
-//   4. That's it — Backup, Activity Log, Set Name, and all the "MANAGE"
-//      data tables will now save to this shared database.
-//
-// All keys are namespaced with "trcf:" so this is safe to share a Redis
-// database with other projects if you ever need to.
+//   1. Open (or create) the Google Sheet you want to use as the database.
+//   2. Extensions -> Apps Script, paste in the provided Code.gs, run "setup"
+//      once, then Deploy -> New deployment -> Web app
+//        - Execute as: Me
+//        - Who has access: Anyone
+//      Copy the resulting URL (ends in /exec).
+//   3. In Vercel -> your trcf-system project -> Settings -> Environment
+//      Variables, add:
+//        APPS_SCRIPT_URL = <the URL you copied>
+//   4. Redeploy the project so the function picks up the new variable.
+//   5. That's it — Backup, Activity Log, Set Name, and all the "MANAGE"
+//      data tables now save into the "KV" tab of that Google Sheet.
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,12 +22,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
-  const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
 
-  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+  if (!APPS_SCRIPT_URL) {
     res.status(500).json({
-      error: 'Storage is not configured yet. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in your Vercel project settings, then redeploy.'
+      error: 'Storage is not configured yet. Set APPS_SCRIPT_URL in your Vercel project settings, then redeploy.'
     });
     return;
   }
@@ -48,30 +43,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    let command;
-    if (action === 'get') {
-      command = ['GET', 'trcf:' + key];
-    } else if (action === 'set') {
-      command = ['SET', 'trcf:' + key, String(value)];
-    } else if (action === 'delete') {
-      command = ['DEL', 'trcf:' + key];
-    } else if (action === 'list') {
-      command = ['KEYS', 'trcf:' + (prefix || '') + '*'];
-    } else {
-      res.status(400).json({ error: 'Unknown action: ' + action });
-      return;
-    }
-
-    const upstreamRes = await fetch(UPSTASH_URL, {
+    const upstreamRes = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + UPSTASH_TOKEN,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(command)
+      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
+      body: JSON.stringify({ action, key, value, prefix })
     });
 
-    const data = await upstreamRes.json();
+    const text = await upstreamRes.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      res.status(500).json({ error: 'Apps Script returned a non-JSON response. Check the deployment is set to "Anyone" access and re-deployed after any code changes.' });
+      return;
+    }
 
     if (data.error) {
       res.status(500).json({ error: 'Database error: ' + data.error });
@@ -79,8 +65,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'list') {
-      const keys = (data.result || []).map((k) => k.replace(/^trcf:/, ''));
-      res.status(200).json({ keys });
+      res.status(200).json({ keys: data.keys || [] });
     } else {
       res.status(200).json({ result: data.result });
     }
