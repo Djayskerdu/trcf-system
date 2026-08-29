@@ -875,7 +875,7 @@
   //      constants right below this comment, in your GitHub repo.
   //   3. Commit & push — Vercel will redeploy automatically.
   const ADMIN_USERNAME = 'trcfadmin';
-  const ADMIN_PASSWORD_HASH = '08a3d2dc7693d7166eef51ec0194ae6009c7636af128d4a208a14d1b5293c3cd'; // sha256("ChangeMe123")
+const ADMIN_PASSWORD_HASH = '7e3caff7246fde66e36e910205c6b645939a447bebc205b251778935e406ab5b'
 
   async function sha256(text){
     const enc = new TextEncoder().encode(text);
@@ -945,7 +945,7 @@
     }
     const newHash = await sha256(newPass);
     const codeSnippet =
-      const ADMIN_USERNAME = 'trcf';
+      const ADMIN_USERNAME = 'trcfadmin';
 const ADMIN_PASSWORD_HASH = '7e3caff7246fde66e36e910205c6b645939a447bebc205b251778935e406ab5b';
     prompt(
       'Copy these two lines and paste them over the ADMIN_USERNAME / ADMIN_PASSWORD_HASH ' +
