@@ -945,8 +945,8 @@
     }
     const newHash = await sha256(newPass);
     const codeSnippet =
-      `const ADMIN_USERNAME = '${newUsername}';\n` +
-      `const ADMIN_PASSWORD_HASH = '${newHash}';`;
+      const ADMIN_USERNAME = 'trcf';
+const ADMIN_PASSWORD_HASH = '7e3caff7246fde66e36e910205c6b645939a447bebc205b251778935e406ab5b';
     prompt(
       'Copy these two lines and paste them over the ADMIN_USERNAME / ADMIN_PASSWORD_HASH ' +
       'lines near the top of the <script> in systems-hub.html, then commit & push to GitHub ' +
