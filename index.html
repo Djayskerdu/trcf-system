@@ -1115,6 +1115,184 @@
     }
   };
 
+  // ============ Shared storage (real database via /api/storage) ============
+  // This calls our own Vercel serverless function, which in turn talks to a
+  // free Upstash Redis database. This is what makes data actually shared
+  // across every device/admin, instead of living only on one browser.
+  const storage = {
+    async get(key){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get', key })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return data.result != null ? { key, value: data.result } : null;
+    },
+    async set(key, value){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set', key, value })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { key, value };
+    },
+    async delete(key){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', key })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { key, deleted: true };
+    },
+    async list(prefix){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list', prefix })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { keys: data.keys || [] };
+    }
+  };
+
+  // ============ Admin name (kept per-device, tags what you do in the log) ============
+  function getAdminName(){
+    return localStorage.getItem('trcf-admin-name') || '';
+  }
+  function setAdminNameLocal(name){
+    localStorage.setItem('trcf-admin-name', name);
+  }
+  function updateAdminBadge(){
+    const name = getAdminName();
+    document.getElementById('adminBadge').textContent = name ? ('👤 ' + name) : '👤 Set name';
+  }
+  function openNameModal(){
+    const current = getAdminName();
+    const name = prompt('Enter the name that should appear in the Activity Log when you make changes:', current);
+    if(name === null) return;
+    setAdminNameLocal(name.trim());
+    updateAdminBadge();
+  }
+  updateAdminBadge();
+
+  // ============ Activity log (shared) ============
+  const LOG_KEY = 'activity-log';
+  let logTimer = null;
+
+  async function logActivity(action, moduleTitle, detail){
+    try {
+      const name = getAdminName() || 'Unknown';
+      const res = await storage.get(LOG_KEY);
+      let entries = [];
+      if(res && res.value){
+        try { entries = JSON.parse(res.value); } catch(e){ entries = []; }
+      }
+      entries.unshift({ action, module: moduleTitle, detail, admin: name, time: new Date().toISOString() });
+      entries = entries.slice(0, 200);
+      await storage.set(LOG_KEY, JSON.stringify(entries));
+    } catch(e){
+      console.warn('Could not write activity log', e);
+    }
+  }
+
+  function scheduleLog(action, detail){
+    if(!currentModuleKey) return;
+    clearTimeout(logTimer);
+    logTimer = setTimeout(() => logActivity(action, MODULES[currentModuleKey].title, detail), 700);
+  }
+
+  async function openLogModal(){
+    currentModuleKey = null;
+    document.getElementById('dataModalTitle').textContent = 'Activity Log';
+    document.getElementById('dataModalExternal').classList.add('hidden');
+    document.getElementById('dmSaveStatus').textContent = '';
+    document.getElementById('dmContent').innerHTML = '<div class="dm-empty">Loading…</div>';
+    document.getElementById('dataModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    let entries = [];
+    try {
+      const res = await storage.get(LOG_KEY);
+      if(res && res.value) entries = JSON.parse(res.value);
+    } catch(e){}
+    renderLog(entries);
+  }
+
+  function renderLog(entries){
+    const content = document.getElementById('dmContent');
+    const clearBtn = `<div style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="log-clear-btn" onclick="clearLog()">Clear Log</button></div>`;
+    if(!entries.length){
+      content.innerHTML = clearBtn + `<div class="dm-empty">No activity recorded yet.</div>`;
+      return;
+    }
+    const rows = entries.map(e => {
+      const badgeClass = e.action === 'add' ? 'add' : e.action === 'delete' ? 'delete' : 'edit';
+      const badgeLabel = e.action === 'add' ? 'ADDED' : e.action === 'delete' ? 'DELETED' : 'EDITED';
+      const time = new Date(e.time).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+      return `
+        <div class="log-entry">
+          <div class="log-top">
+            <span class="log-badge ${badgeClass}">${badgeLabel}</span>
+            <span class="log-module">${escapeAttr(e.module)}</span>
+            <span class="log-time">${time}</span>
+          </div>
+          <div class="log-detail">${escapeAttr(e.detail || '')}</div>
+          <div class="log-admin">by ${escapeAttr(e.admin || 'Unknown')}</div>
+        </div>`;
+    }).join('');
+    content.innerHTML = clearBtn + rows;
+  }
+
+  async function clearLog(){
+    if(!confirm('Clear the entire activity log? This cannot be undone.')) return;
+    try {
+      await storage.set(LOG_KEY, JSON.stringify([]));
+      renderLog([]);
+    } catch(e){
+      alert('Could not clear the log. Please try again.');
+    }
+  }
+
+  // ============ CSV backup of every module's data ============
+  async function exportBackup(){
+    try {
+      let csv = '';
+      for (const key of Object.keys(MODULES)){
+        const cfg = MODULES[key];
+        let rows = [];
+        try {
+          const res = await storage.get('module:' + key);
+          if(res && res.value) rows = JSON.parse(res.value).rows || [];
+        } catch(e){}
+        csv += `\n"${cfg.title.replace(/"/g,'""')}"\n`;
+        const headers = [cfg.labelField.label, ...cfg.columns.map(c => c.label)];
+        csv += headers.map(h => `"${h.replace(/"/g,'""')}"`).join(',') + '\n';
+        rows.forEach(row => {
+          const line = [row[cfg.labelField.key] || '', ...cfg.columns.map(c => row[c.key] ?? '')];
+          csv += line.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',') + '\n';
+        });
+      }
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'systems-hub-backup-' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch(e){
+      alert('Could not generate the backup. Please try again.');
+    }
+  }
+
   let currentModuleKey = null;
   let currentRows = [];
   let saveTimer = null;
@@ -1147,7 +1325,7 @@
 
   async function loadModuleRows(key){
     try {
-      const res = await window.storage.get('module:' + key, true);
+      const res = await storage.get('module:' + key);
       if(res && res.value){
         const parsed = JSON.parse(res.value);
         return Array.isArray(parsed.rows) ? parsed.rows : [];
@@ -1165,7 +1343,7 @@
     const statusEl = document.getElementById('dmSaveStatus');
     statusEl.textContent = 'Saving…';
     try {
-      await window.storage.set('module:' + key, JSON.stringify({ rows: rowsSnapshot, updatedAt: new Date().toISOString() }), true);
+      await storage.set('module:' + key, JSON.stringify({ rows: rowsSnapshot, updatedAt: new Date().toISOString() }));
       statusEl.textContent = 'Saved ✓';
       setTimeout(() => { if(statusEl.textContent === 'Saved ✓') statusEl.textContent = ''; }, 1500);
     } catch(e){
@@ -1224,6 +1402,9 @@
     currentRows[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleSave();
     updateTotalsRow();
+    const cfg = MODULES[currentModuleKey];
+    const label = currentRows[idx][cfg.labelField.key] || '(unnamed)';
+    scheduleLog('edit', `Updated "${label}"`);
   }
 
   function updateTotalsRow(){
@@ -1244,6 +1425,7 @@
     currentRows.push(newRow);
     scheduleSave();
     renderTable();
+    logActivity('add', cfg.title, `Added a new ${cfg.labelField.label.toLowerCase()} entry`);
     setTimeout(() => {
       const inputs = document.querySelectorAll('.dm-table tbody tr:last-child input');
       if(inputs[0]) inputs[0].focus();
@@ -1252,9 +1434,12 @@
 
   function deleteRow(idx){
     if(!confirm('Delete this entry? This cannot be undone.')) return;
+    const cfg = MODULES[currentModuleKey];
+    const label = currentRows[idx][cfg.labelField.key] || '(unnamed)';
     currentRows.splice(idx, 1);
     scheduleSave();
     renderTable();
+    logActivity('delete', cfg.title, `Deleted "${label}"`);
   }
 </script>
 
