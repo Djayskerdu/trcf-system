@@ -26,12 +26,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
-  const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
   if (!UPSTASH_URL || !UPSTASH_TOKEN) {
     res.status(500).json({
-      error: 'Storage is not configured yet. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in your Vercel project settings, then redeploy.'
+      error: 'Storage is not configured yet. Connect an Upstash/KV database to this Vercel project, then redeploy.'
     });
     return;
   }
