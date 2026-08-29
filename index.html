@@ -459,6 +459,7 @@
     border-bottom:1px solid var(--line);
   }
   .dm-table tr:hover td{background:#FBFAF6;}
+  .dm-chart-wrap{margin-top:24px; padding-top:16px; border-top:1px solid #eee; height:240px;}
   .dm-table input{
     width:100%;
     border:1.5px solid transparent;
@@ -639,6 +640,7 @@
     h1{font-size:26px;}
   }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -1385,6 +1387,7 @@
     document.getElementById('dataModal').classList.add('hidden');
     document.body.style.overflow = '';
     currentModuleKey = null;
+    if(currentChart){ currentChart.destroy(); currentChart = null; }
   }
 
   async function loadModuleRows(key){
@@ -1424,11 +1427,14 @@
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  let currentChart = null;
+
   function renderTable(){
     const cfg = MODULES[currentModuleKey];
     const content = document.getElementById('dmContent');
 
     if(currentRows.length === 0){
+      if(currentChart){ currentChart.destroy(); currentChart = null; }
       content.innerHTML = `
         <p class="dm-header-sub">${cfg.subtitle}</p>
         <div class="dm-empty">No entries yet. Add the first one below.</div>
@@ -1459,13 +1465,52 @@
         <tfoot><tr class="dm-totals"><td>TOTAL</td>${totals}<td></td></tr></tfoot>
       </table>
       <button class="dm-add-row" onclick="addRow()">+ Add ${cfg.labelField.label}</button>
+      <div class="dm-chart-wrap">
+        <canvas id="dmChartCanvas" height="220"></canvas>
+      </div>
     `;
+
+    renderChart();
+  }
+
+  const CHART_COLORS = ['#2E6E4E','#D9822B','#3B6FA0','#B33A3A','#7A5CA6','#4E9A8C'];
+
+  function renderChart(){
+    const cfg = MODULES[currentModuleKey];
+    const canvas = document.getElementById('dmChartCanvas');
+    if(!canvas || typeof Chart === 'undefined') return;
+
+    const labels = currentRows.map(r => r[cfg.labelField.key] || '(unnamed)');
+    const datasets = cfg.columns.map((c, i) => ({
+      label: c.label,
+      data: currentRows.map(r => Number(r[c.key]) || 0),
+      backgroundColor: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+    if(currentChart){
+      currentChart.data.labels = labels;
+      currentChart.data.datasets = datasets;
+      currentChart.update();
+      return;
+    }
+
+    currentChart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
   }
 
   function updateCell(idx, key, value, isNumber){
     currentRows[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleSave();
     updateTotalsRow();
+    renderChart();
     const cfg = MODULES[currentModuleKey];
     const label = currentRows[idx][cfg.labelField.key] || '(unnamed)';
     scheduleLog('edit', `Updated "${label}"`);
