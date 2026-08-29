@@ -862,20 +862,59 @@
 <script>
   document.getElementById('lastUpdated').textContent = 'Page built ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
-  // ============ Access Lock (hardcoded shared admin username/password) ============
-  // This is a STATIC site with no database, so credentials live directly in this
-  // file rather than in a server-side store. It's a deterrent against casual
-  // access, not real security — anyone with dev-tools access to this file can
-  // read ADMIN_USERNAME/ADMIN_PASSWORD_HASH below.
-  //
-  // Default login is trcfadmin / ChangeMe123 — please change it right away:
-  //   1. Click "🔑 Change Password" below, enter the current password,
-  //      then a new username/password. It will show you two lines of code.
-  //   2. Paste those two lines over the ADMIN_USERNAME / ADMIN_PASSWORD_HASH
-  //      constants right below this comment, in your GitHub repo.
-  //   3. Commit & push — Vercel will redeploy automatically.
-  const ADMIN_USERNAME = 'trcfadmin';
-  const ADMIN_PASSWORD_HASH = '08a3d2dc7693d7166eef51ec0194ae6009c7636af128d4a208a14d1b5293c3cd'; // sha256("ChangeMe123")
+  // ============ Shared storage (real database via /api/storage) ============
+  // This calls our own Vercel serverless function, which in turn talks to a
+  // free Upstash Redis database. This is what makes data actually shared
+  // across every device/admin, instead of living only on one browser.
+  const storage = {
+    async get(key){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get', key })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return data.result != null ? { key, value: data.result } : null;
+    },
+    async set(key, value){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set', key, value })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { key, value };
+    },
+    async delete(key){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', key })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { key, deleted: true };
+    },
+    async list(prefix){
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list', prefix })
+      });
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      return { keys: data.keys || [] };
+    }
+  };
+
+  // ============ Access Lock (shared admin username/password, stored in the database) ============
+  // Credentials now live in the database behind /api/storage, so changing
+  // the password is just a button click — no code edits, no GitHub, no
+  // redeploying. The password is hashed (SHA-256) before it's ever saved.
+  const CREDENTIALS_KEY = 'admin-credentials';
+  let credentialsRecord = null; // { username, passwordHash }
 
   async function sha256(text){
     const enc = new TextEncoder().encode(text);
@@ -883,10 +922,47 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
   }
 
-  function initLock(){
-    document.getElementById('lockConfirmInput').classList.add('hidden');
-    document.getElementById('lockTitle').textContent = 'Enter Access Password';
-    document.getElementById('lockSubtitle').textContent = 'This dashboard is protected. Enter the admin username and password to continue.';
+  async function fetchCredentials(){
+    try {
+      const res = await storage.get(CREDENTIALS_KEY);
+      return res && res.value ? JSON.parse(res.value) : null;
+    } catch(e){
+      return null;
+    }
+  }
+
+  async function initLock(){
+    const submitBtn = document.getElementById('lockSubmitBtn');
+    const errorEl = document.getElementById('lockError');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Loading…';
+    errorEl.textContent = '';
+
+    try {
+      credentialsRecord = await fetchCredentials();
+    } catch(e){
+      errorEl.textContent = 'Could not reach the database. Check that storage is set up, then reload.';
+      submitBtn.textContent = 'Unlock';
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const confirmInput = document.getElementById('lockConfirmInput');
+    const title = document.getElementById('lockTitle');
+    const subtitle = document.getElementById('lockSubtitle');
+
+    if(!credentialsRecord){
+      title.textContent = 'Create Admin Access';
+      subtitle.textContent = 'No admin login exists yet. Choose a shared username and password — this will be needed by anyone opening this hub from now on.';
+      confirmInput.classList.remove('hidden');
+      submitBtn.textContent = 'Create & Unlock';
+    } else {
+      title.textContent = 'Enter Access Password';
+      subtitle.textContent = 'This dashboard is protected. Enter the admin username and password to continue.';
+      confirmInput.classList.add('hidden');
+      submitBtn.textContent = 'Unlock';
+    }
+    submitBtn.disabled = false;
   }
 
   async function submitLock(){
@@ -902,9 +978,35 @@
     }
 
     submitBtn.disabled = true;
+
+    if(!credentialsRecord){
+      const confirmPass = document.getElementById('lockConfirmInput').value;
+      if(password !== confirmPass){
+        errorEl.textContent = 'Passwords do not match.';
+        submitBtn.disabled = false;
+        return;
+      }
+      if(password.length < 6){
+        errorEl.textContent = 'Password must be at least 6 characters.';
+        submitBtn.disabled = false;
+        return;
+      }
+      try {
+        const hash = await sha256(password);
+        const record = { username, passwordHash: hash };
+        await storage.set(CREDENTIALS_KEY, JSON.stringify(record));
+        credentialsRecord = record;
+        unlockApp();
+      } catch(e){
+        errorEl.textContent = 'Could not save credentials. Please try again.';
+        submitBtn.disabled = false;
+      }
+      return;
+    }
+
     try {
       const hash = await sha256(password);
-      if(username === ADMIN_USERNAME && hash === ADMIN_PASSWORD_HASH){
+      if(username === credentialsRecord.username && hash === credentialsRecord.passwordHash){
         unlockApp();
       } else {
         errorEl.textContent = 'Incorrect username or password.';
@@ -920,18 +1022,24 @@
     document.getElementById('lockOverlay').classList.add('hidden');
   }
 
-  // Lets an admin generate the code lines for a new username/password,
-  // without ever sending the real password anywhere — everything happens
-  // in this browser tab only.
+  // Change the shared admin username/password right from the toolbar —
+  // saves straight to the database, no code editing needed.
   async function changePassword(){
+    if(!credentialsRecord){
+      credentialsRecord = await fetchCredentials();
+    }
+    if(!credentialsRecord){
+      alert('No admin login has been created yet.');
+      return;
+    }
     const currentPass = prompt('Enter the CURRENT admin password to confirm:');
     if(currentPass === null) return;
     const currentHash = await sha256(currentPass);
-    if(currentHash !== ADMIN_PASSWORD_HASH){
+    if(currentHash !== credentialsRecord.passwordHash){
       alert('Current password is incorrect. Nothing changed.');
       return;
     }
-    const newUsername = (prompt('New username (leave blank to keep "' + ADMIN_USERNAME + '"):') || '').trim() || ADMIN_USERNAME;
+    const newUsername = (prompt('New username (leave blank to keep "' + credentialsRecord.username + '"):') || '').trim() || credentialsRecord.username;
     const newPass = prompt('New password (min 6 characters):');
     if(newPass === null) return;
     if(newPass.length < 6){
@@ -943,16 +1051,15 @@
       alert('Passwords did not match. Nothing changed.');
       return;
     }
-    const newHash = await sha256(newPass);
-    const codeSnippet =
-      `const ADMIN_USERNAME = '${newUsername}';\n` +
-      `const ADMIN_PASSWORD_HASH = '${newHash}';`;
-    prompt(
-      'Copy these two lines and paste them over the ADMIN_USERNAME / ADMIN_PASSWORD_HASH ' +
-      'lines near the top of the <script> in systems-hub.html, then commit & push to GitHub ' +
-      'so Vercel redeploys:',
-      codeSnippet
-    );
+    try {
+      const newHash = await sha256(newPass);
+      const record = { username: newUsername, passwordHash: newHash };
+      await storage.set(CREDENTIALS_KEY, JSON.stringify(record));
+      credentialsRecord = record;
+      alert('Admin password updated. This takes effect immediately for everyone.');
+    } catch(e){
+      alert('Could not save the new password. Please check your connection and try again.');
+    }
   }
 
   ['lockUsernameInput','lockInput','lockConfirmInput'].forEach(id => {
@@ -1112,53 +1219,6 @@
         { key:'totalStudents', label:'Total Students' },
         { key:'graduates', label:'Graduates' }
       ]
-    }
-  };
-
-  // ============ Shared storage (real database via /api/storage) ============
-  // This calls our own Vercel serverless function, which in turn talks to a
-  // free Upstash Redis database. This is what makes data actually shared
-  // across every device/admin, instead of living only on one browser.
-  const storage = {
-    async get(key){
-      const res = await fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get', key })
-      });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      return data.result != null ? { key, value: data.result } : null;
-    },
-    async set(key, value){
-      const res = await fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set', key, value })
-      });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      return { key, value };
-    },
-    async delete(key){
-      const res = await fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', key })
-      });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      return { key, deleted: true };
-    },
-    async list(prefix){
-      const res = await fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'list', prefix })
-      });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      return { keys: data.keys || [] };
     }
   };
 
