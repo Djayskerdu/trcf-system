@@ -2,8 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Systems Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TRCF ADMIN HUB</title>
+
+<!-- PWA: lets this be installed to a phone home screen or as a desktop app -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2F5233">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TRCF Hub">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -71,7 +82,8 @@
   .controls{
     display:flex;
     align-items:center;
-    gap:14px;
+    flex-wrap:wrap;
+    gap:10px;
     margin-bottom:8px;
   }
   .search{
@@ -429,6 +441,8 @@
   .dm-content{
     padding:20px 22px 26px;
     overflow-y:auto;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
     flex:1;
   }
   .dm-header-sub{
@@ -438,6 +452,7 @@
   }
   .dm-table{
     width:100%;
+    min-width:560px;
     border-collapse:collapse;
     font-size:13.5px;
   }
@@ -459,6 +474,7 @@
     border-bottom:1px solid var(--line);
   }
   .dm-table tr:hover td{background:#FBFAF6;}
+  .dm-chart-wrap{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #eee; height:240px;}
   .dm-table input{
     width:100%;
     border:1.5px solid transparent;
@@ -634,11 +650,35 @@
   .lock-submit:disabled{opacity:0.6; cursor:not-allowed;}
 
   @media (max-width:640px){
-    header{flex-direction:column;align-items:flex-start;}
+    .wrap{padding:16px 14px 40px;}
+    header{flex-direction:column;align-items:flex-start;gap:14px;}
     .meta{text-align:left;}
-    h1{font-size:26px;}
+    h1{font-size:22px;}
+
+    /* Toolbar: search gets its own full-width row, buttons wrap below it
+       instead of being squeezed into one unscrollable line */
+    .controls{gap:8px;}
+    .search{flex:1 1 100%;order:1;}
+    .tool-btn{flex:1 1 auto;order:2;padding:10px 12px;font-size:12.5px;}
+
+    .section-head{flex-wrap:wrap;}
+    .grid{grid-template-columns:1fr;}
+    .leader-list{grid-template-columns:1fr;}
+
+    .master-tile{flex-wrap:wrap;gap:12px;padding:20px;}
+    .master-go{order:3;width:100%;text-align:center;}
+
+    /* Full-screen modals so embedded systems/tables are usable on a phone */
+    .modal-overlay{padding:0;}
+    .modal-box{max-width:100%;height:100vh;height:100dvh;border-radius:0;}
+    .modal-header{padding:12px 14px;flex-wrap:wrap;gap:8px;}
+    .modal-title{font-size:14px;}
+    .dm-content{padding:14px 14px 22px;}
+
+    .lock-box{padding:28px 22px;}
   }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -666,7 +706,7 @@
         <path d="M23 18 L12 25 M23 18 L34 25" stroke="#2F5233" stroke-width="2"/>
       </svg>
       <div>
-        <h1>Systems Hub</h1>
+        <h1>TRCF ADMIN HUB</h1>
         <p>All cell reports &amp; church databases — one place, one click</p>
       </div>
     </div>
@@ -685,6 +725,7 @@
     <button class="tool-btn" onclick="openLogModal()" title="See who added, edited, or deleted entries">🗂 Activity Log</button>
     <button class="tool-btn" id="adminBadge" onclick="openNameModal()" title="Set the name shown in the activity log">👤 Set name</button>
     <button class="tool-btn" onclick="changePassword()" title="Change the shared admin username/password">🔑 Change Password</button>
+    <button class="tool-btn hidden" id="installBtn" onclick="installApp()" title="Install this hub as an app on your device">📲 Install App</button>
   </div>
 
   <section>
@@ -824,7 +865,7 @@
   </section>
 
   <footer>
-    <span>Systems Hub — internal use for admins</span>
+    <span>TRCF ADMIN HUB — internal use for admins</span>
     <span id="lastUpdated"></span>
   </footer>
 
@@ -1157,16 +1198,6 @@
 
   // ============ CRUD data modules (shared storage) ============
   const MODULES = {
-    networkLeaders: {
-      title: 'Network Leaders Cell Reports',
-      subtitle: 'Manually entered per-leader totals. Not auto-synced from the individual leader sheets.',
-      sheetUrl: 'https://docs.google.com/spreadsheets/d/1T6hDABRqRjFqVMTwE2k04KOFruKKsCxZJkzfzHhVMNE/edit?gid=1238698878#gid=1238698878',
-      labelField: { key:'name', label:'Leader Name', placeholder:'Leader name' },
-      columns: [
-        { key:'cells', label:'No. of Cells' },
-        { key:'members', label:'Total Members' }
-      ]
-    },
     youthJam: {
       title: 'Youth Jam Database',
       subtitle: 'One row per week. Totals below add up everything entered.',
@@ -1186,7 +1217,8 @@
         { key:'totalStudents', label:'Total Students' },
         { key:'egr', label:'Joined EGR' },
         { key:'waterBaptism', label:'Water Baptism' },
-        { key:'movingUp', label:'Moving Up' }
+        { key:'movingUp', label:'Moving Up' },
+        { key:'dropped', label:'Dropped' }
       ]
     },
     sol1: {
@@ -1196,7 +1228,8 @@
       labelField: { key:'batch', label:'Batch', placeholder:'e.g. Batch 1' },
       columns: [
         { key:'totalStudents', label:'Total Students' },
-        { key:'movingUp', label:'Moving Up' }
+        { key:'movingUp', label:'Moving Up' },
+        { key:'dropped', label:'Dropped' }
       ]
     },
     sol2: {
@@ -1207,7 +1240,8 @@
       columns: [
         { key:'totalStudents', label:'Total Students' },
         { key:'reEncounter', label:'Joined Re-Encounter' },
-        { key:'movingUp', label:'Moving Up' }
+        { key:'movingUp', label:'Moving Up' },
+        { key:'dropped', label:'Dropped' }
       ]
     },
     sol3: {
@@ -1217,7 +1251,8 @@
       labelField: { key:'batch', label:'Batch', placeholder:'e.g. Batch 1' },
       columns: [
         { key:'totalStudents', label:'Total Students' },
-        { key:'graduates', label:'Graduates' }
+        { key:'graduates', label:'Graduates' },
+        { key:'dropped', label:'Dropped' }
       ]
     }
   };
@@ -1381,6 +1416,7 @@
     document.getElementById('dataModal').classList.add('hidden');
     document.body.style.overflow = '';
     currentModuleKey = null;
+    if(currentChart){ currentChart.destroy(); currentChart = null; }
   }
 
   async function loadModuleRows(key){
@@ -1420,9 +1456,17 @@
     return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  let currentChart = null;
+
   function renderTable(){
     const cfg = MODULES[currentModuleKey];
     const content = document.getElementById('dmContent');
+
+    // Any existing chart is tied to a canvas we're about to destroy (we're
+    // rebuilding the whole table below), so it must be discarded here —
+    // otherwise later renderChart() calls try to update a dead chart object
+    // and nothing visibly happens.
+    if(currentChart){ currentChart.destroy(); currentChart = null; }
 
     if(currentRows.length === 0){
       content.innerHTML = `
@@ -1449,6 +1493,9 @@
 
     content.innerHTML = `
       <p class="dm-header-sub">${cfg.subtitle}</p>
+      <div class="dm-chart-wrap">
+        <canvas id="dmChartCanvas" height="220"></canvas>
+      </div>
       <table class="dm-table">
         <thead><tr>${thead}</tr></thead>
         <tbody>${rowsHtml}</tbody>
@@ -1456,12 +1503,48 @@
       </table>
       <button class="dm-add-row" onclick="addRow()">+ Add ${cfg.labelField.label}</button>
     `;
+
+    renderChart();
+  }
+
+  const CHART_COLORS = ['#2E6E4E','#D9822B','#3B6FA0','#B33A3A','#7A5CA6','#4E9A8C'];
+
+  function renderChart(){
+    const cfg = MODULES[currentModuleKey];
+    const canvas = document.getElementById('dmChartCanvas');
+    if(!canvas || typeof Chart === 'undefined') return;
+
+    const labels = currentRows.map(r => r[cfg.labelField.key] || '(unnamed)');
+    const datasets = cfg.columns.map((c, i) => ({
+      label: c.label,
+      data: currentRows.map(r => Number(r[c.key]) || 0),
+      backgroundColor: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+    if(currentChart){
+      currentChart.data.labels = labels;
+      currentChart.data.datasets = datasets;
+      currentChart.update();
+      return;
+    }
+
+    currentChart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
   }
 
   function updateCell(idx, key, value, isNumber){
     currentRows[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleSave();
     updateTotalsRow();
+    renderChart();
     const cfg = MODULES[currentModuleKey];
     const label = currentRows[idx][cfg.labelField.key] || '(unnamed)';
     scheduleLog('edit', `Updated "${label}"`);
@@ -1500,6 +1583,49 @@
     scheduleSave();
     renderTable();
     logActivity('delete', cfg.title, `Deleted "${label}"`);
+  }
+
+  // ---- Installable app (phone home screen / desktop app) ----------------
+  // Registers the service worker (required by Chrome/Android/desktop before
+  // it will offer an install prompt) and wires up the toolbar Install button.
+  let deferredInstallPrompt = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById('installBtn');
+    if (btn) btn.classList.remove('hidden');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const btn = document.getElementById('installBtn');
+    if (btn) btn.classList.add('hidden');
+  });
+
+  async function installApp(){
+    // Chrome / Edge / Android: native install prompt
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      document.getElementById('installBtn').classList.add('hidden');
+      return;
+    }
+    // iOS Safari has no install prompt API — walk the user through
+    // "Add to Home Screen" manually.
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS) {
+      alert('To install on iPhone/iPad:\n\n1. Tap the Share icon (square with an arrow) in Safari\'s toolbar\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"\n\nTRCF Hub will then open full-screen from your home screen like a regular app.');
+    } else {
+      alert('To install this app, open your browser menu and choose "Install app" (Chrome/Edge) or "Add to Home Screen".');
+    }
   }
 </script>
 
