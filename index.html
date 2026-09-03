@@ -1198,6 +1198,17 @@
 
   // ============ CRUD data modules (shared storage) ============
   const MODULES = {
+      networkLeaders: {
+      title: 'Network Leaders Cell Reports',
+      subtitle: 'One row per network leader. Master tracker for 2026.',
+      sheetUrl: null,
+      labelField: { key:'leader', label:'Network Leader', placeholder:'e.g. Abraham' },
+      columns: [
+        { key:'cells', label:'Number of Cells' },
+        { key:'members', label:'Total Members' }
+      ]
+    },
+    
     youthJam: {
       title: 'Youth Jam Database',
       subtitle: 'One row per week. Totals below add up everything entered.',
