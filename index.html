@@ -7,7 +7,7 @@
 
 <!-- PWA: lets this be installed to a phone home screen or as a desktop app -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#2F5233">
+<meta name="theme-color" content="#1440B9">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -19,21 +19,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #F5F1E8;
+    --bg: #F2F5FB;
     --paper: #FFFFFF;
-    --ink: #23271F;
-    --sub: #6B6459;
-    --line: #E4DCC9;
-    --gold: #C08A1E;
-    --green: #2F5233;
-    --ring: rgba(47,82,51,0.18);
+    --ink: #1C2740;
+    --sub: #5B6B8A;
+    --line: #DDE5F3;
+    --gold: #2C6FC9;
+    --green: #1440B9;
+    --ring: rgba(20,64,185,0.18);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:
-      radial-gradient(1200px 500px at 90% -10%, rgba(192,138,30,0.10), transparent 60%),
-      radial-gradient(900px 500px at -10% 10%, rgba(47,82,51,0.10), transparent 55%),
+      radial-gradient(1200px 500px at 90% -10%, rgba(44,111,201,0.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(20,64,185,0.10), transparent 55%),
       var(--bg);
     color:var(--ink);
     font-family:'Inter',sans-serif;
@@ -252,7 +252,7 @@
     gap:20px;
     padding:26px 28px;
     border-radius:16px;
-    background:linear-gradient(135deg, #2F5233, #1E6F5C);
+    background:linear-gradient(135deg, #1440B9, #0D2C86);
     color:#fff;
     text-decoration:none;
     box-shadow:0 6px 18px rgba(0,0,0,0.14);
@@ -385,7 +385,7 @@
     justify-content:space-between;
     padding:14px 18px;
     border-bottom:1.5px solid var(--line);
-    background:#FAF8F3;
+    background:#F2F6FC;
   }
   .modal-title{
     font-family:'Poppins',sans-serif;
@@ -422,7 +422,7 @@
     cursor:pointer;
     line-height:1;
   }
-  .modal-close:hover{background:#d8cfb4;}
+  .modal-close:hover{background:#DDE5F3;}
   .modal-box iframe{
     flex:1;
     width:100%;
@@ -459,7 +459,7 @@
   .dm-table th{
     text-align:left;
     padding:10px 10px;
-    background:#FAF8F3;
+    background:#F2F6FC;
     border-bottom:2px solid var(--line);
     font-family:'Poppins',sans-serif;
     font-weight:700;
@@ -473,7 +473,7 @@
     padding:4px 6px;
     border-bottom:1px solid var(--line);
   }
-  .dm-table tr:hover td{background:#FBFAF6;}
+  .dm-table tr:hover td{background:#F2F6FC;}
   .dm-chart-wrap{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #eee; height:240px;}
   .dm-table input{
     width:100%;
@@ -503,7 +503,7 @@
   .dm-row-delete:hover{background:rgba(177,80,47,0.12);}
   .dm-totals td{
     font-weight:700;
-    background:#F5F1E8;
+    background:#F2F5FB;
     border-top:2px solid var(--line);
     border-bottom:none;
     padding:10px 6px;
@@ -523,13 +523,13 @@
     cursor:pointer;
     font-family:'Inter',sans-serif;
   }
-  .dm-add-row:hover{background:#25401f;}
+  .dm-add-row:hover{background:#0D2C86;}
   .dm-empty{
     padding:34px 10px;
     text-align:center;
     color:var(--sub);
     font-size:13.5px;
-    background:#FAF8F3;
+    background:#F2F6FC;
     border-radius:12px;
     border:1.5px dashed var(--line);
     margin-bottom:14px;
@@ -585,7 +585,7 @@
   .log-entry{padding:10px 0; border-bottom:1px solid var(--line);}
   .log-top{display:flex; align-items:center; gap:8px; margin-bottom:3px; flex-wrap:wrap;}
   .log-badge{display:inline-block; padding:2px 9px; border-radius:20px; font-size:10.5px; font-weight:700; color:#fff;}
-  .log-badge.add{background:#2F5233;}
+  .log-badge.add{background:#1440B9;}
   .log-badge.edit{background:#2C5F8A;}
   .log-badge.delete{background:#B1502F;}
   .log-module{font-weight:700; font-size:12.5px;}
@@ -612,7 +612,7 @@
     background:
       radial-gradient(900px 500px at 85% -10%, rgba(192,138,30,0.28), transparent 60%),
       radial-gradient(900px 600px at 10% 110%, rgba(30,111,92,0.35), transparent 55%),
-      linear-gradient(160deg,#1c2a1e,#2F5233);
+      linear-gradient(160deg,#0A1B4D,#1440B9);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -634,7 +634,7 @@
     margin:0 auto 18px;
     border-radius:18px;
     display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg, #2F5233, #1E6F5C);
+    background:linear-gradient(135deg, #1440B9, #0D2C86);
     box-shadow:0 8px 18px rgba(47,82,51,0.28);
   }
   .welcome-box h1{
@@ -681,13 +681,13 @@
     font-family:'Inter',sans-serif;
     transition:background .15s;
   }
-  .welcome-enter:hover{background:#25401f;}
+  .welcome-enter:hover{background:#0D2C86;}
 
   /* Access lock overlay */
   .lock-overlay{
     position:fixed;
     inset:0;
-    background:linear-gradient(160deg,#1c2a1e,#2F5233);
+    background:linear-gradient(160deg,#0A1B4D,#1440B9);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -724,7 +724,7 @@
     cursor:pointer;
     font-family:'Inter',sans-serif;
   }
-  .lock-submit:hover{background:#25401f;}
+  .lock-submit:hover{background:#0D2C86;}
   .lock-submit:disabled{opacity:0.6; cursor:not-allowed;}
 
   @media (max-width:640px){
@@ -766,8 +766,8 @@
     <div class="welcome-badge">
       <svg width="30" height="30" viewBox="0 0 46 46" fill="none">
         <circle cx="23" cy="12" r="6" fill="#fff"/>
-        <circle cx="10" cy="30" r="6" fill="#C08A1E"/>
-        <circle cx="36" cy="30" r="6" fill="#C08A1E"/>
+        <circle cx="10" cy="30" r="6" fill="#2C6FC9"/>
+        <circle cx="36" cy="30" r="6" fill="#2C6FC9"/>
         <path d="M23 18 L12 25 M23 18 L34 25" stroke="#fff" stroke-width="2"/>
       </svg>
     </div>
@@ -797,10 +797,10 @@
   <header>
     <div class="brand">
       <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
-        <circle cx="23" cy="12" r="6" fill="#2F5233"/>
-        <circle cx="10" cy="30" r="6" fill="#C08A1E"/>
-        <circle cx="36" cy="30" r="6" fill="#C08A1E"/>
-        <path d="M23 18 L12 25 M23 18 L34 25" stroke="#2F5233" stroke-width="2"/>
+        <circle cx="23" cy="12" r="6" fill="#1440B9"/>
+        <circle cx="10" cy="30" r="6" fill="#2C6FC9"/>
+        <circle cx="36" cy="30" r="6" fill="#2C6FC9"/>
+        <path d="M23 18 L12 25 M23 18 L34 25" stroke="#1440B9" stroke-width="2"/>
       </svg>
       <div>
         <h1>TRCF ADMIN HUB</h1>
@@ -815,7 +815,7 @@
 
   <div class="controls">
     <div class="search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#23271F" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C2740" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input id="searchBox" type="text" placeholder="Search a system or leader name..." oninput="filterTiles()">
     </div>
     <button class="tool-btn" onclick="exportBackup()" title="Download a CSV backup of all editable data">⬇ Backup</button>
@@ -847,13 +847,13 @@
     </button>
 
     <button class="toggle-row" id="toggleBtn" onclick="toggleLeaders()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2F5233" stroke-width="3"><path d="M9 18l6-6-6-6"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1440B9" stroke-width="3"><path d="M9 18l6-6-6-6"/></svg>
       <span id="toggleLabel">Show individual leader reports (9)</span>
     </button>
 
     <div class="grid leader-list collapsed" id="grid-leaders">
       <a class="leader-row" data-name="abraham cell report 2026" href="https://docs.google.com/spreadsheets/d/1hKSdt9bJ-uYnE3BQEeuvxJM7FQQiVM1iH6hnRF9iNdc/edit?gid=382267683#gid=382267683" target="_blank">
-        <div class="leader-avatar" style="background:#1E6F5C">A</div>
+        <div class="leader-avatar" style="background:#0D2C86">A</div>
         <div><div class="leader-name">Abraham</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="imee cell report 2026" href="https://docs.google.com/spreadsheets/d/1qubNYArJ_o-NOeQk2hZeFUOrdLbUV8E8c11qGfeWeBs/edit?gid=628920897#gid=628920897" target="_blank">
@@ -861,15 +861,15 @@
         <div><div class="leader-name">Imee</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="pendon cell report 2026" href="https://docs.google.com/spreadsheets/d/1K5nst9ab26HpbmdqOe2jrbwqulmHl7kyRCpylD9voH0/edit?gid=566172796#gid=566172796" target="_blank">
-        <div class="leader-avatar" style="background:#6B3FA0">P</div>
+        <div class="leader-avatar" style="background:#1E4D91">P</div>
         <div><div class="leader-name">Pendon</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="laparan cell report 2026" href="https://docs.google.com/spreadsheets/d/1zKIDwEIcRtCZzFrgLFhr9dSiaBHZYrqdhCFhttopmFU/edit?gid=1783058890#gid=1783058890" target="_blank">
-        <div class="leader-avatar" style="background:#B1502F">L</div>
+        <div class="leader-avatar" style="background:#3B6FA0">L</div>
         <div><div class="leader-name">Laparan</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="franklin cell report 2026" href="https://docs.google.com/spreadsheets/d/1DX7FP3ENWkQT631_gdfzGwJ6XvzFODHIWk4-Rf67DXY/edit?gid=1384740190#gid=1384740190" target="_blank">
-        <div class="leader-avatar" style="background:#C08A1E">F</div>
+        <div class="leader-avatar" style="background:#2C6FC9">F</div>
         <div><div class="leader-name">Franklin</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="sonny cell report 2026" href="https://docs.google.com/spreadsheets/d/1D571Yrj1THkswVhl_iuA1_Kqmzy-5pUzqL6ueIoANAQ/edit?gid=704145983#gid=704145983" target="_blank">
@@ -877,11 +877,11 @@
         <div><div class="leader-name">Sonny</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="jay cell report 2026" href="https://docs.google.com/spreadsheets/d/1cCM6VtMzu3b-Dra-BNnlcd6e-vxt_7H8F80Jf_mFCpA/edit?gid=1140271647#gid=1140271647" target="_blank">
-        <div class="leader-avatar" style="background:#7A2E38">J</div>
+        <div class="leader-avatar" style="background:#123974">J</div>
         <div><div class="leader-name">Jay</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
       <a class="leader-row" data-name="jotoy cell report 2026 v2" href="https://docs.google.com/spreadsheets/d/1Yyn3rLtc3rKzZmxLm9ssf3rMYFHNFmhaJtsak6xWTx8/edit?gid=1419017072#gid=1419017072" target="_blank">
-        <div class="leader-avatar" style="background:#1E6F5C">J</div>
+        <div class="leader-avatar" style="background:#0D2C86">J</div>
         <div><div class="leader-name">Jotoy</div><div class="leader-sub">Cell Report 2026 (V2)</div></div>
       </a>
       <a class="leader-row" data-name="rodemio cell report 2026" href="https://docs.google.com/spreadsheets/d/1KaJu3rUfQxoguFKd-KWFgnaDf5Ptn0icHr2q0OCeM1w/edit?gid=712607396#gid=712607396" target="_blank">
@@ -900,7 +900,7 @@
       </div>
     </div>
     <div class="grid" id="grid-other">
-      <button type="button" class="tile tile-crud" data-module="youthJam" data-name="youth jam database 2026" style="background:#B1502F">
+      <button type="button" class="tile tile-crud" data-module="youthJam" data-name="youth jam database 2026" style="background:#3B6FA0">
         <div>
           <div class="badge-edit">EDITABLE</div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2 L4 14h6l-1 8 9-12h-6z"/></svg></div>
@@ -910,7 +910,7 @@
         <div class="go">MANAGE →</div>
       </button>
 
-      <a class="tile" data-name="consolidation system" href="https://docs.google.com/spreadsheets/d/1CX6hzSMSW378Q40dxOQVf2uliarXi5ClHxBTVRrWLzg/edit?gid=10212988#gid=10212988" target="_blank" style="background:#6B3FA0">
+      <a class="tile" data-name="consolidation system" href="https://docs.google.com/spreadsheets/d/1CX6hzSMSW378Q40dxOQVf2uliarXi5ClHxBTVRrWLzg/edit?gid=10212988#gid=10212988" target="_blank" style="background:#1E4D91">
         <div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 12h6l3 8 3-16 3 8h3"/></svg></div>
           <div class="tile-name">Consolidation System</div>
@@ -919,7 +919,7 @@
         <div class="go">OPEN SHEET →</div>
       </a>
 
-      <button type="button" class="tile tile-crud" data-module="lifeClass" data-name="lifeclass database" style="background:#2F5233">
+      <button type="button" class="tile tile-crud" data-module="lifeClass" data-name="lifeclass database" style="background:#1440B9">
         <div>
           <div class="badge-edit">EDITABLE</div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
@@ -939,7 +939,7 @@
         <div class="go">MANAGE →</div>
       </button>
 
-      <button type="button" class="tile tile-crud" data-module="sol2" data-name="sol2 database school of leaders 2" style="background:#C08A1E">
+      <button type="button" class="tile tile-crud" data-module="sol2" data-name="sol2 database school of leaders 2" style="background:#2C6FC9">
         <div>
           <div class="badge-edit">EDITABLE</div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></div>
@@ -949,7 +949,7 @@
         <div class="go">MANAGE →</div>
       </button>
 
-      <button type="button" class="tile tile-crud" data-module="sol3" data-name="school of leaders 3 database" style="background:#7A2E38">
+      <button type="button" class="tile tile-crud" data-module="sol3" data-name="school of leaders 3 database" style="background:#123974">
         <div>
           <div class="badge-edit">EDITABLE</div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></div>
@@ -1630,7 +1630,7 @@
     renderChart();
   }
 
-  const CHART_COLORS = ['#2E6E4E','#D9822B','#3B6FA0','#B33A3A','#7A5CA6','#4E9A8C'];
+  const CHART_COLORS = ['#1440B9','#2C6FC9','#5B8FD9','#0D2C86','#3D4C63','#1E4D91'];
 
   function renderChart(){
     const cfg = MODULES[currentModuleKey];
