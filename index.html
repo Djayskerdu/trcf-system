@@ -605,6 +605,84 @@
   }
   .log-clear-btn:hover{background:var(--gold); color:#fff;}
 
+  /* Welcome screen (shown first, before the login/access lock) */
+  .welcome-overlay{
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(192,138,30,0.28), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(30,111,92,0.35), transparent 55%),
+      linear-gradient(160deg,#1c2a1e,#2F5233);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:6000;
+    padding:20px;
+  }
+  .welcome-overlay.hidden{display:none;}
+  .welcome-box{
+    background:#fff;
+    padding:48px 40px;
+    border-radius:22px;
+    max-width:420px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,0.35);
+  }
+  .welcome-badge{
+    width:64px;height:64px;
+    margin:0 auto 18px;
+    border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, #2F5233, #1E6F5C);
+    box-shadow:0 8px 18px rgba(47,82,51,0.28);
+  }
+  .welcome-box h1{
+    font-family:'Poppins',sans-serif;
+    font-weight:800;
+    font-size:26px;
+    letter-spacing:-0.01em;
+    margin:0 0 8px;
+    color:var(--ink);
+  }
+  .welcome-greeting{
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 10px;
+  }
+  .welcome-sub{
+    font-size:14.5px;
+    line-height:1.55;
+    color:var(--sub);
+    margin:0 0 28px;
+  }
+  .welcome-verse{
+    font-size:12.5px;
+    font-style:italic;
+    color:var(--sub);
+    border-top:1.5px solid var(--line);
+    margin-top:24px;
+    padding-top:16px;
+  }
+  .welcome-enter{
+    width:100%;
+    padding:13px;
+    background:var(--green);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:background .15s;
+  }
+  .welcome-enter:hover{background:#25401f;}
+
   /* Access lock overlay */
   .lock-overlay{
     position:fixed;
@@ -676,13 +754,32 @@
     .dm-content{padding:14px 14px 22px;}
 
     .lock-box{padding:28px 22px;}
+    .welcome-box{padding:32px 24px;}
   }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-<div class="lock-overlay" id="lockOverlay">
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-box">
+    <div class="welcome-badge">
+      <svg width="30" height="30" viewBox="0 0 46 46" fill="none">
+        <circle cx="23" cy="12" r="6" fill="#fff"/>
+        <circle cx="10" cy="30" r="6" fill="#C08A1E"/>
+        <circle cx="36" cy="30" r="6" fill="#C08A1E"/>
+        <path d="M23 18 L12 25 M23 18 L34 25" stroke="#fff" stroke-width="2"/>
+      </svg>
+    </div>
+    <p class="welcome-greeting" id="welcomeGreeting">Welcome</p>
+    <h1>TRCF Admin Hub</h1>
+    <p class="welcome-sub">All cell reports &amp; church databases, together in one place. Sign in below to view and manage your systems.</p>
+    <button class="welcome-enter" onclick="enterFromWelcome()">Continue to Sign In →</button>
+    <p class="welcome-verse">"Let all things be done decently and in order." — 1 Corinthians 14:40</p>
+  </div>
+</div>
+
+<div class="lock-overlay hidden" id="lockOverlay">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
     <h2 id="lockTitle">Enter Access Password</h2>
@@ -1061,6 +1158,21 @@
 
   function unlockApp(){
     document.getElementById('lockOverlay').classList.add('hidden');
+  }
+
+  // ============ Welcome screen (shown first, before the login/access lock) ============
+  (function setWelcomeGreeting(){
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const el = document.getElementById('welcomeGreeting');
+    if(el) el.textContent = greeting;
+  })();
+
+  function enterFromWelcome(){
+    document.getElementById('welcomeOverlay').classList.add('hidden');
+    document.getElementById('lockOverlay').classList.remove('hidden');
+    const first = document.getElementById('lockUsernameInput');
+    if(first) first.focus();
   }
 
   // Change the shared admin username/password right from the toolbar —
