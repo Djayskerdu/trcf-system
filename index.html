@@ -786,6 +786,9 @@
   .yj-mini-table td{padding:2px 2px; border-bottom:1px solid var(--line);}
   .yj-mini-table input{width:100%; border:1.5px solid transparent; background:transparent; padding:6px 7px; border-radius:6px; font-size:12.5px; font-family:'Inter',sans-serif; color:var(--ink);}
   .yj-mini-table input:focus{border-color:var(--green); background:#fff; outline:none; box-shadow:0 0 0 3px var(--ring);}
+  .yj-vip-date-cell{display:flex; flex-direction:column; gap:2px;}
+  .yj-vip-quickfill{width:100%; border:1.5px solid transparent; background:transparent; padding:5px 6px; border-radius:6px; font-size:10.5px; font-family:'Inter',sans-serif; color:var(--sub); max-width:100%;}
+  .yj-vip-quickfill:focus{border-color:var(--green); background:#fff; outline:none; box-shadow:0 0 0 3px var(--ring);}
   .yj-add-btn{margin-top:10px; background:none; border:1.5px dashed var(--gold); color:var(--gold); font-weight:700; font-size:12px; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%; font-family:'Inter',sans-serif;}
   .yj-add-btn:hover{background:var(--ring);}
   .yj-import-btn{border-style:solid; border-color:var(--green); color:var(--green); margin-top:8px;}
@@ -2145,7 +2148,15 @@
       head: '<tr><th>Date</th><th>VIP\'s</th><th></th></tr>',
       rows: () => yjData.vipLog.map((v, idx) => `
         <tr>
-          <td><input type="date" value="${yjEsc(v.date||'')}" oninput="yjUpdateVip(${idx},'date',this.value,false)"></td>
+          <td>
+            <div class="yj-vip-date-cell">
+              <select class="yj-vip-quickfill" onchange="yjQuickFillVipDate(${idx},this.value)" title="Fill from a date already in Weekly Attendance">
+                <option value="">Pick from Weekly ▾</option>
+                ${yjWeeklyQuickDateOptions().map(o => `<option value="${o.value}" ${v.date===o.value?'selected':''}>${yjEsc(o.text)}</option>`).join('')}
+              </select>
+              <input type="date" id="yjVipDateInput${idx}" value="${yjEsc(v.date||'')}" oninput="yjUpdateVip(${idx},'date',this.value,false)">
+            </div>
+          </td>
           <td><input type="number" value="${v.count ?? ''}" placeholder="0" oninput="yjUpdateVip(${idx},'count',this.value,true)"></td>
           <td><button class="dm-row-delete" onclick="yjDeleteVip(${idx})" title="Delete">✕</button></td>
         </tr>`).join('')
@@ -2566,6 +2577,30 @@
   }
 
   // ---- VIP Log ----
+  // Builds "quick-fill" date options straight from the Weekly Attendance
+  // table's Month/Year/Label, so a VIP date already logged there doesn't
+  // have to be typed a second time. Weekly rows only track month+year (no
+  // specific day), so each option resolves to the 1st of that month; the
+  // day can still be fine-tuned in the date field next to it if needed.
+  function yjWeeklyQuickDateOptions(){
+    const seen = new Set();
+    return yjData.weekly
+      .filter(w => w.month && w.year)
+      .map(w => ({
+        value: `${w.year}-${String(w.month).padStart(2,'0')}-01`,
+        text: YJ_MONTH_NAMES[w.month-1] + ' ' + w.year + (w.label ? ' — ' + w.label : '')
+      }))
+      .filter(o => { const key = o.value+'|'+o.text; if(seen.has(key)) return false; seen.add(key); return true; })
+      .sort((a,b) => a.value.localeCompare(b.value));
+  }
+
+  function yjQuickFillVipDate(idx, value){
+    if(!value) return;
+    const input = document.getElementById('yjVipDateInput'+idx);
+    if(input) input.value = value;
+    yjUpdateVip(idx, 'date', value, false);
+  }
+
   function yjPatchVipStats(){
     const stats = yjComputeStats();
     const val = document.getElementById('yjStatMtdVip'); if(val) val.textContent = stats.mtdVip;
