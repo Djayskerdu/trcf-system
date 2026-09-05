@@ -847,49 +847,216 @@
   }
   .welcome-enter:active{transform:translateY(0) scale(0.99);}
 
+  /* ====== Lock overlay & dashboard animations ====== */
+  @keyframes lOverlayIn{from{opacity:0}to{opacity:1}}
+  @keyframes lBoxIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes lIconBounce{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+  @keyframes lShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  @keyframes lOrb{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-20px)}}
+  @keyframes dashFadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes headerSlideDown{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes controlsFadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes sectionFadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes tileFadeUp{from{opacity:0;transform:translateY(16px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes countPop{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  @keyframes borderPulse{0%,100%{border-color:var(--line)}50%{border-color:rgba(20,64,185,0.35)}}
+
   /* Access lock overlay */
   .lock-overlay{
     position:fixed;
     inset:0;
-    background:linear-gradient(160deg,#0A1B4D,#1440B9);
+    background:
+      radial-gradient(700px 400px at 80% 0%, rgba(192,138,30,0.18), transparent 55%),
+      radial-gradient(600px 500px at 5% 100%, rgba(30,111,92,0.2), transparent 50%),
+      linear-gradient(160deg,#0A1B4D,#1440B9);
     display:flex;
     align-items:center;
     justify-content:center;
     z-index:5000;
     padding:20px;
+    animation:lOverlayIn 0.5s ease forwards;
+    overflow:hidden;
   }
   .lock-overlay.hidden{display:none;}
+
+  /* Subtle orb behind lock box */
+  .lock-overlay::before{
+    content:'';
+    position:absolute;
+    width:500px;height:500px;
+    border-radius:50%;
+    background:rgba(20,64,185,0.25);
+    filter:blur(80px);
+    animation:lOrb 9s ease-in-out infinite;
+    pointer-events:none;
+  }
+
   .lock-box{
-    background:#fff;
-    padding:36px 32px;
-    border-radius:18px;
+    background:rgba(255,255,255,0.98);
+    backdrop-filter:blur(10px);
+    padding:40px 36px;
+    border-radius:20px;
     max-width:340px;
     width:100%;
     text-align:center;
-    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+    box-shadow:0 28px 64px rgba(0,0,0,0.34), 0 0 0 1px rgba(255,255,255,0.1);
+    position:relative;
+    z-index:1;
+    animation:lBoxIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.15s both;
   }
-  .lock-icon{font-size:32px; margin-bottom:8px;}
+  .lock-box::before{
+    content:'';
+    position:absolute;
+    top:0;left:12%;right:12%;
+    height:2px;
+    border-radius:0 0 3px 3px;
+    background:linear-gradient(90deg,transparent,rgba(20,64,185,0.55),transparent);
+  }
+  .lock-box.shake{animation:lShake 0.4s ease;}
+
+  .lock-icon{
+    font-size:36px;
+    margin-bottom:10px;
+    display:inline-block;
+    animation:lIconBounce 0.55s cubic-bezier(0.22,1,0.36,1) 0.4s both;
+  }
   .lock-box h2{
     font-family:'Poppins',sans-serif;
     font-size:18px;
     margin:6px 0 4px;
     color:var(--ink);
+    animation:lBoxIn 0.5s ease 0.5s both;
   }
-  .lock-sub{font-size:12.5px; color:var(--sub); margin:0 0 18px;}
+  .lock-sub{
+    font-size:12.5px;
+    color:var(--sub);
+    margin:0 0 18px;
+    animation:lBoxIn 0.5s ease 0.6s both;
+  }
+
+  /* Input fields on lock screen */
+  #lockUsernameInput, #lockPassInput{
+    transition:border-color .2s, box-shadow .2s, transform .15s;
+  }
+  #lockUsernameInput:focus, #lockPassInput:focus{
+    transform:scale(1.01);
+  }
+
   .lock-submit{
     width:100%;
-    padding:11px;
-    background:var(--green);
+    padding:12px;
+    background:linear-gradient(135deg,#1440B9,#0D2C86);
     color:#fff;
     border:none;
-    border-radius:9px;
+    border-radius:10px;
     font-weight:700;
     font-size:14px;
     cursor:pointer;
     font-family:'Inter',sans-serif;
+    letter-spacing:0.02em;
+    transition:transform .18s, box-shadow .18s, opacity .18s;
+    box-shadow:0 5px 16px rgba(20,64,185,0.4);
+    animation:lBoxIn 0.5s ease 0.7s both;
+    position:relative;
+    overflow:hidden;
   }
-  .lock-submit:hover{background:#0D2C86;}
-  .lock-submit:disabled{opacity:0.6; cursor:not-allowed;}
+  .lock-submit::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+    transform:translateX(-100%);
+    transition:transform 0.5s ease;
+  }
+  .lock-submit:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 22px rgba(20,64,185,0.5);
+  }
+  .lock-submit:hover::after{transform:translateX(100%);}
+  .lock-submit:active{transform:translateY(0) scale(0.98);}
+  .lock-submit:disabled{opacity:0.55; cursor:not-allowed; transform:none;}
+
+  /* ====== Main Dashboard Animations ====== */
+  /* Header */
+  header{
+    animation:headerSlideDown 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s both;
+  }
+  .meta span{
+    animation:countPop 0.6s cubic-bezier(0.22,1,0.36,1) 0.5s both;
+  }
+
+  /* Controls bar */
+  .controls{
+    animation:controlsFadeIn 0.5s ease 0.3s both;
+  }
+
+  /* Sections stagger */
+  section:nth-of-type(1){animation:sectionFadeUp 0.55s ease 0.35s both;}
+  section:nth-of-type(2){animation:sectionFadeUp 0.55s ease 0.5s both;}
+  section:nth-of-type(3){animation:sectionFadeUp 0.55s ease 0.65s both;}
+
+  /* Tiles stagger */
+  .tile:nth-child(1){animation:tileFadeUp 0.45s ease 0.45s both;}
+  .tile:nth-child(2){animation:tileFadeUp 0.45s ease 0.55s both;}
+  .tile:nth-child(3){animation:tileFadeUp 0.45s ease 0.65s both;}
+  .tile:nth-child(4){animation:tileFadeUp 0.45s ease 0.75s both;}
+  .tile:nth-child(5){animation:tileFadeUp 0.45s ease 0.85s both;}
+  .tile:nth-child(6){animation:tileFadeUp 0.45s ease 0.95s both;}
+  .tile:nth-child(n+7){animation:tileFadeUp 0.45s ease 1.0s both;}
+
+  /* Tile enhanced hover */
+  .tile{
+    transition:transform .2s cubic-bezier(0.22,1,0.36,1), box-shadow .2s ease;
+  }
+  .tile:hover{
+    transform:translateY(-5px) scale(1.02);
+    box-shadow:0 16px 36px rgba(0,0,0,0.2);
+  }
+
+  /* Section head num badge pulse-in */
+  .section-head .num{
+    animation:lIconBounce 0.5s ease both;
+  }
+  section:nth-of-type(1) .section-head .num{animation-delay:0.45s;}
+  section:nth-of-type(2) .section-head .num{animation-delay:0.6s;}
+
+  /* Search input smooth focus */
+  .search input{
+    transition:border-color .2s, box-shadow .2s, transform .15s;
+  }
+  .search input:focus{
+    border-color:var(--green);
+    box-shadow:0 0 0 4px var(--ring);
+    transform:scale(1.005);
+  }
+
+  /* Tool buttons hover lift */
+  .tool-btn{
+    transition:transform .15s, box-shadow .15s, background .15s;
+  }
+  .tool-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  }
+  .tool-btn:active{transform:translateY(0);}
+
+  /* Master tile enhanced */
+  .master-tile{
+    transition:transform .2s cubic-bezier(0.22,1,0.36,1), box-shadow .2s ease;
+  }
+  .master-tile:hover{
+    transform:translateY(-3px);
+    box-shadow:0 12px 28px rgba(20,64,185,0.28);
+  }
+
+  /* Leader rows fade in */
+  .leader-row{
+    transition:transform .16s ease, box-shadow .16s ease, background .16s;
+  }
+  .leader-row:hover{
+    transform:translateX(3px);
+    box-shadow:0 3px 12px rgba(0,0,0,0.08);
+  }
 
   /* Youth Jam dashboard */
   .yj-stats-month-picker{display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
@@ -1400,6 +1567,11 @@
       } else {
         errorEl.textContent = 'Incorrect username or password.';
         submitBtn.disabled = false;
+        const box = document.querySelector('.lock-box');
+        box.classList.remove('shake');
+        void box.offsetWidth;
+        box.classList.add('shake');
+        setTimeout(()=>box.classList.remove('shake'), 420);
       }
     } catch(e){
       errorEl.textContent = 'Something went wrong. Please try again.';
@@ -1408,7 +1580,14 @@
   }
 
   function unlockApp(){
-    document.getElementById('lockOverlay').classList.add('hidden');
+    const overlay = document.getElementById('lockOverlay');
+    overlay.style.transition = 'opacity 0.4s ease';
+    overlay.style.opacity = '0';
+    setTimeout(()=>{
+      overlay.classList.add('hidden');
+      overlay.style.opacity = '';
+      overlay.style.transition = '';
+    }, 400);
   }
 
   // ============ Welcome screen (shown first, before the login/access lock) ============
