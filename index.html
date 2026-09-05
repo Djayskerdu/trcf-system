@@ -654,6 +654,20 @@
   .log-clear-btn:hover{background:var(--gold); color:#fff;}
 
   /* Welcome screen (shown first, before the login/access lock) */
+
+  /* ---------- Keyframe Animations ---------- */
+  @keyframes wOverlayFadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes wBoxSlideUp{from{opacity:0;transform:translateY(40px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes wBadgePop{0%{transform:scale(0.4) rotate(-15deg);opacity:0}70%{transform:scale(1.12) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0deg);opacity:1}}
+  @keyframes wBadgePulse{0%,100%{box-shadow:0 8px 18px rgba(20,64,185,0.45),0 0 0 0 rgba(20,64,185,0.35)}70%{box-shadow:0 8px 18px rgba(20,64,185,0.45),0 0 0 14px rgba(20,64,185,0)}}
+  @keyframes wTextFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes wShimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+  @keyframes wParticleFloat{0%{transform:translateY(0) scale(1);opacity:0.7}50%{opacity:1}100%{transform:translateY(-120px) scale(0.4);opacity:0}}
+  @keyframes wCrossGlow{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:0.8;transform:scale(1.06)}}
+  @keyframes wOrb1{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+  @keyframes wOrb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-35px,25px)}}
+  @keyframes wEnterPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
   .welcome-overlay{
     position:fixed;
     inset:0;
@@ -666,25 +680,103 @@
     justify-content:center;
     z-index:6000;
     padding:20px;
+    animation:wOverlayFadeIn 0.6s ease forwards;
+    overflow:hidden;
   }
   .welcome-overlay.hidden{display:none;}
+
+  /* Animated background orbs */
+  .welcome-orb{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(70px);
+    pointer-events:none;
+  }
+  .welcome-orb-1{
+    width:420px;height:420px;
+    background:rgba(20,64,185,0.38);
+    top:-80px;left:-80px;
+    animation:wOrb1 8s ease-in-out infinite;
+  }
+  .welcome-orb-2{
+    width:380px;height:380px;
+    background:rgba(192,138,30,0.22);
+    bottom:-60px;right:-60px;
+    animation:wOrb2 10s ease-in-out infinite;
+  }
+  .welcome-orb-3{
+    width:260px;height:260px;
+    background:rgba(30,111,92,0.25);
+    bottom:20%;left:15%;
+    animation:wOrb1 12s ease-in-out infinite reverse;
+  }
+
+  /* Floating cross particles */
+  .welcome-particle{
+    position:absolute;
+    font-size:16px;
+    color:rgba(255,255,255,0.55);
+    pointer-events:none;
+    animation:wParticleFloat linear infinite;
+    user-select:none;
+  }
+
+  /* Decorative cross in background */
+  .welcome-bg-cross{
+    position:absolute;
+    right:8%;top:12%;
+    font-size:100px;
+    color:rgba(255,255,255,0.06);
+    pointer-events:none;
+    animation:wCrossGlow 4s ease-in-out infinite;
+    user-select:none;
+  }
+  .welcome-bg-cross2{
+    position:absolute;
+    left:5%;bottom:15%;
+    font-size:70px;
+    color:rgba(255,255,255,0.05);
+    pointer-events:none;
+    animation:wCrossGlow 5s ease-in-out infinite reverse;
+    user-select:none;
+  }
+
   .welcome-box{
-    background:#fff;
+    background:rgba(255,255,255,0.97);
+    backdrop-filter:blur(12px);
     padding:48px 40px;
-    border-radius:22px;
+    border-radius:24px;
     max-width:420px;
     width:100%;
     text-align:center;
-    box-shadow:0 24px 60px rgba(0,0,0,0.35);
+    box-shadow:0 32px 72px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.12);
+    position:relative;
+    z-index:1;
+    animation:wBoxSlideUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.2s both;
   }
+
+  /* Subtle top shimmer line on card */
+  .welcome-box::before{
+    content:'';
+    position:absolute;
+    top:0;left:10%;right:10%;
+    height:2px;
+    border-radius:0 0 4px 4px;
+    background:linear-gradient(90deg,transparent,rgba(20,64,185,0.5),rgba(192,138,30,0.5),transparent);
+    background-size:200% auto;
+    animation:wShimmer 3s linear infinite;
+  }
+
   .welcome-badge{
-    width:64px;height:64px;
-    margin:0 auto 18px;
-    border-radius:18px;
+    width:72px;height:72px;
+    margin:0 auto 20px;
+    border-radius:20px;
     display:flex;align-items:center;justify-content:center;
     background:linear-gradient(135deg, #1440B9, #0D2C86);
-    box-shadow:0 8px 18px rgba(47,82,51,0.28);
+    animation:wBadgePop 0.65s cubic-bezier(0.22,1,0.36,1) 0.5s both, wBadgePulse 2.5s ease-in-out 1.5s infinite;
   }
+  .welcome-badge svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25));}
+
   .welcome-box h1{
     font-family:'Poppins',sans-serif;
     font-weight:800;
@@ -692,6 +784,7 @@
     letter-spacing:-0.01em;
     margin:0 0 8px;
     color:var(--ink);
+    animation:wTextFadeUp 0.5s ease 0.85s both;
   }
   .welcome-greeting{
     font-family:'Poppins',sans-serif;
@@ -701,12 +794,14 @@
     text-transform:uppercase;
     color:var(--gold);
     margin:0 0 10px;
+    animation:wTextFadeUp 0.5s ease 0.75s both;
   }
   .welcome-sub{
     font-size:14.5px;
     line-height:1.55;
     color:var(--sub);
     margin:0 0 28px;
+    animation:wTextFadeUp 0.5s ease 0.95s both;
   }
   .welcome-verse{
     font-size:12.5px;
@@ -715,21 +810,42 @@
     border-top:1.5px solid var(--line);
     margin-top:24px;
     padding-top:16px;
+    animation:wTextFadeUp 0.5s ease 1.2s both;
   }
   .welcome-enter{
     width:100%;
-    padding:13px;
-    background:var(--green);
+    padding:14px;
+    background:linear-gradient(135deg,#1440B9,#0D2C86);
+    background-size:200% auto;
     color:#fff;
     border:none;
-    border-radius:10px;
+    border-radius:12px;
     font-weight:700;
     font-size:14.5px;
     cursor:pointer;
     font-family:'Inter',sans-serif;
-    transition:background .15s;
+    letter-spacing:0.02em;
+    transition:transform .2s, box-shadow .2s, background-position .4s;
+    box-shadow:0 6px 20px rgba(20,64,185,0.45);
+    animation:wTextFadeUp 0.5s ease 1.05s both, wEnterPulse 2s ease-in-out 2s infinite;
+    position:relative;
+    overflow:hidden;
   }
-  .welcome-enter:hover{background:#0D2C86;}
+  .welcome-enter::after{
+    content:'';
+    position:absolute;
+    top:0;left:-100%;
+    width:60%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
+    animation:wShimmer 2.5s linear 2s infinite;
+  }
+  .welcome-enter:hover{
+    transform:translateY(-2px) scale(1.02);
+    box-shadow:0 10px 28px rgba(20,64,185,0.55);
+    background-position:right center;
+    animation:none;
+  }
+  .welcome-enter:active{transform:translateY(0) scale(0.99);}
 
   /* Access lock overlay */
   .lock-overlay{
@@ -867,6 +983,16 @@
 <body>
 
 <div class="welcome-overlay" id="welcomeOverlay">
+  <!-- Animated background orbs -->
+  <div class="welcome-orb welcome-orb-1"></div>
+  <div class="welcome-orb welcome-orb-2"></div>
+  <div class="welcome-orb welcome-orb-3"></div>
+  <!-- Decorative crosses -->
+  <div class="welcome-bg-cross">✝</div>
+  <div class="welcome-bg-cross2">✝</div>
+  <!-- Floating particles (generated by JS) -->
+  <div id="welcomeParticles"></div>
+
   <div class="welcome-box">
     <div class="welcome-badge">
       <svg width="30" height="30" viewBox="0 0 46 46" fill="none">
@@ -1293,11 +1419,38 @@
     if(el) el.textContent = greeting;
   })();
 
+  // Floating particles on welcome screen
+  (function spawnWelcomeParticles(){
+    const container = document.getElementById('welcomeParticles');
+    if(!container) return;
+    const symbols = ['✝','✦','★','·','✶','⋆'];
+    const count = 18;
+    for(let i = 0; i < count; i++){
+      const p = document.createElement('span');
+      p.className = 'welcome-particle';
+      p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      const left = Math.random() * 100;
+      const delay = Math.random() * 8;
+      const duration = 6 + Math.random() * 8;
+      const size = 10 + Math.random() * 14;
+      const startY = 20 + Math.random() * 80; // start from various heights
+      p.style.cssText = `left:${left}%;bottom:${startY}%;font-size:${size}px;animation-duration:${duration}s;animation-delay:${delay}s;opacity:0;`;
+      container.appendChild(p);
+    }
+  })();
+
   function enterFromWelcome(){
-    document.getElementById('welcomeOverlay').classList.add('hidden');
-    document.getElementById('lockOverlay').classList.remove('hidden');
-    const first = document.getElementById('lockUsernameInput');
-    if(first) first.focus();
+    const overlay = document.getElementById('welcomeOverlay');
+    overlay.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    overlay.style.opacity = '0';
+    overlay.style.transform = 'scale(1.03)';
+    setTimeout(()=>{
+      overlay.classList.add('hidden');
+      overlay.style.transform = '';
+      document.getElementById('lockOverlay').classList.remove('hidden');
+      const first = document.getElementById('lockUsernameInput');
+      if(first) first.focus();
+    }, 450);
   }
 
   // Change the shared admin username/password right from the toolbar —
