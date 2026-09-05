@@ -727,6 +727,41 @@
   .lock-submit:hover{background:#0D2C86;}
   .lock-submit:disabled{opacity:0.6; cursor:not-allowed;}
 
+  /* Youth Jam dashboard */
+  .yj-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px;}
+  .yj-stat-card{background:#F2F6FC; border:1.5px solid var(--line); border-radius:14px; padding:16px 18px;}
+  .yj-stat-label{font-family:'Poppins',sans-serif; font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--sub); margin-bottom:6px;}
+  .yj-stat-value{font-family:'Poppins',sans-serif; font-weight:800; font-size:30px; color:var(--ink); line-height:1;}
+  .yj-stat-hint{font-size:11.5px; color:var(--sub); margin-top:6px;}
+  .yj-flow-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; align-items:start;}
+  .yj-panel{background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:14px 16px 16px;}
+  .yj-panel-title{display:flex; align-items:center; gap:8px; font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:var(--ink);}
+  .yj-panel-count{background:var(--green); color:#fff; font-size:11px; font-weight:800; border-radius:999px; padding:2px 9px; min-width:20px; text-align:center;}
+  .yj-panel-sub{font-size:11px; color:var(--sub); margin:2px 0 10px;}
+  .yj-mini-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .yj-mini-table th{text-align:left; padding:6px 4px; font-size:9.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--sub); border-bottom:1.5px solid var(--line); font-family:'Poppins',sans-serif; font-weight:700;}
+  .yj-mini-table td{padding:2px 2px; border-bottom:1px solid var(--line);}
+  .yj-mini-table input{width:100%; border:1.5px solid transparent; background:transparent; padding:6px 7px; border-radius:6px; font-size:12.5px; font-family:'Inter',sans-serif; color:var(--ink);}
+  .yj-mini-table input:focus{border-color:var(--green); background:#fff; outline:none; box-shadow:0 0 0 3px var(--ring);}
+  .yj-add-btn{margin-top:10px; background:none; border:1.5px dashed var(--gold); color:var(--gold); font-weight:700; font-size:12px; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%; font-family:'Inter',sans-serif;}
+  .yj-add-btn:hover{background:var(--ring);}
+  .yj-subtotal{margin-top:8px; font-size:11px; color:var(--sub); text-align:right;}
+  .yj-section-title{font-family:'Poppins',sans-serif; font-weight:700; font-size:13.5px; color:var(--ink); margin:26px 0 12px; display:flex; align-items:center; gap:8px;}
+  .yj-section-title .yj-arrow{color:var(--sub); font-weight:400;}
+  .yj-bottom-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:26px;}
+  .yj-year-tabs{display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 10px;}
+  .yj-year-tab{border:1.5px solid var(--line); background:#fff; color:var(--sub); font-weight:700; font-size:12px; padding:5px 12px; border-radius:999px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .yj-year-tab.active{background:var(--green); color:#fff; border-color:var(--green);}
+  .yj-mini-row{display:flex; justify-content:space-between; font-size:12.5px; padding:5px 2px; border-bottom:1px dashed var(--line);}
+  .yj-mini-row:last-child{border-bottom:none;}
+  .yj-empty-mini{font-size:12px; color:var(--sub); padding:8px 2px;}
+
+  @media (max-width:640px){
+    .yj-stats{grid-template-columns:1fr;}
+    .yj-flow-grid{grid-template-columns:1fr;}
+    .yj-bottom-grid{grid-template-columns:1fr;}
+  }
+
   @media (max-width:640px){
     .wrap{padding:16px 14px 40px;}
     header{flex-direction:column;align-items:flex-start;gap:14px;}
@@ -900,12 +935,12 @@
       </div>
     </div>
     <div class="grid" id="grid-other">
-      <button type="button" class="tile tile-crud" data-module="youthJam" data-name="youth jam database 2026" style="background:#3B6FA0">
+      <button type="button" class="tile tile-crud" data-module="youthJam" data-name="youth jam dashboard 2026" style="background:#3B6FA0">
         <div>
           <div class="badge-edit">EDITABLE</div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2 L4 14h6l-1 8 9-12h-6z"/></svg></div>
-          <div class="tile-name">Youth Jam Database</div>
-          <div class="tile-desc">Weekly participants &amp; first timers</div>
+          <div class="tile-name">Youth Jam Dashboard</div>
+          <div class="tile-desc">Roster, leaders, VIPs &amp; weekly attendance</div>
         </div>
         <div class="go">MANAGE →</div>
       </button>
@@ -1248,7 +1283,11 @@
   document.querySelectorAll('.tile-crud').forEach(el => {
     el.addEventListener('click', function(e){
       e.preventDefault();
-      openDataModal(this.dataset.module);
+      if(this.dataset.module === 'youthJam'){
+        openYouthJamDashboard();
+      } else {
+        openDataModal(this.dataset.module);
+      }
     });
   });
 
@@ -1321,16 +1360,6 @@
       ]
     },
     
-    youthJam: {
-      title: 'Youth Jam Database',
-      subtitle: 'One row per week. Totals below add up everything entered.',
-      sheetUrl: 'https://docs.google.com/spreadsheets/d/1dofQu2rCncROR-91po8JFj0z6nWSdWBbahpdDKC2GQg/edit?gid=792816760#gid=792816760',
-      labelField: { key:'week', label:'Week / Date', placeholder:'e.g. Aug 24–30' },
-      columns: [
-        { key:'participants', label:'Participants' },
-        { key:'firstTimers', label:'First Timers' }
-      ]
-    },
     lifeClass: {
       title: 'LifeClass Database',
       subtitle: 'One row per batch.',
@@ -1497,6 +1526,21 @@
           csv += line.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',') + '\n';
         });
       }
+
+      // Youth Jam dashboard has its own custom shape (roster / leaders /
+      // vipLog / weekly), so it isn't part of MODULES — export it separately.
+      try {
+        const yj = await loadYJData();
+        csv += `\n"Youth Jam Dashboard — YJM Roster"\n"Name","Network Leader"\n`;
+        yj.roster.forEach(r => { csv += `"${String(r.name||'').replace(/"/g,'""')}","${String(r.leader||'').replace(/"/g,'""')}"\n`; });
+        csv += `\n"Youth Jam Dashboard — Leaders"\n"Name"\n`;
+        yj.leaders.forEach(l => { csv += `"${String(l.name||'').replace(/"/g,'""')}"\n`; });
+        csv += `\n"Youth Jam Dashboard — VIP Log"\n"Date","VIP Count"\n`;
+        yj.vipLog.forEach(v => { csv += `"${v.date||''}","${v.count ?? ''}"\n`; });
+        csv += `\n"Youth Jam Dashboard — Weekly Attendance"\n"Date","Week / Label","Participants","First Timers"\n`;
+        yj.weekly.forEach(w => { csv += `"${w.date||''}","${String(w.label||'').replace(/"/g,'""')}","${w.participants ?? ''}","${w.firstTimers ?? ''}"\n`; });
+      } catch(e){}
+
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1706,6 +1750,414 @@
     scheduleSave();
     renderTable();
     logActivity('delete', cfg.title, `Deleted "${label}"`);
+  }
+
+  // ============ Youth Jam Dashboard (custom module) ============
+  // Not a generic MODULES table — this mirrors the flowchart the ministry
+  // sketched out: 3 auto-calculated top numbers, 3 connected lists/logs
+  // feeding them, a weekly attendance log + chart, and auto month/year
+  // roll-ups computed from the weekly dates. All state lives in one JSON
+  // blob at storage key 'module:youthJam'.
+  const YJ_KEY = 'module:youthJam';
+  const YJ_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let yjData = null;
+  let yjSaveTimer = null;
+  let yjSelectedYear = null;
+
+  async function loadYJData(){
+    try {
+      const res = await storage.get(YJ_KEY);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        // Migrate the old "one row per week" shape (week/participants/firstTimers)
+        // into the new dashboard shape, so existing entries aren't lost.
+        if(Array.isArray(parsed.rows) && !Array.isArray(parsed.weekly)){
+          return {
+            roster: [],
+            leaders: [],
+            vipLog: [],
+            weekly: parsed.rows.map(r => ({ date:'', label: r.week || '', participants: r.participants ?? '', firstTimers: r.firstTimers ?? '' }))
+          };
+        }
+        return {
+          roster: Array.isArray(parsed.roster) ? parsed.roster : [],
+          leaders: Array.isArray(parsed.leaders) ? parsed.leaders : [],
+          vipLog: Array.isArray(parsed.vipLog) ? parsed.vipLog : [],
+          weekly: Array.isArray(parsed.weekly) ? parsed.weekly : []
+        };
+      }
+    } catch(e){}
+    return { roster: [], leaders: [], vipLog: [], weekly: [] };
+  }
+
+  function scheduleYJSave(){
+    clearTimeout(yjSaveTimer);
+    yjSaveTimer = setTimeout(persistYJ, 500);
+  }
+
+  async function persistYJ(){
+    const statusEl = document.getElementById('dmSaveStatus');
+    if(statusEl) statusEl.textContent = 'Saving…';
+    try {
+      await storage.set(YJ_KEY, JSON.stringify(Object.assign({}, yjData, { updatedAt: new Date().toISOString() })));
+      if(statusEl){
+        statusEl.textContent = 'Saved ✓';
+        setTimeout(() => { if(statusEl.textContent === 'Saved ✓') statusEl.textContent = ''; }, 1500);
+      }
+    } catch(e){
+      if(statusEl) statusEl.textContent = 'Save failed';
+    }
+  }
+
+  function yjMonthKeyOf(dateStr){
+    if(!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if(isNaN(d)) return null;
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  function yjYearOf(dateStr){
+    if(!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if(isNaN(d)) return null;
+    return d.getFullYear();
+  }
+  function yjCurrentMonthKey(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  function yjCurrentMonthName(){
+    return YJ_MONTH_NAMES[new Date().getMonth()];
+  }
+
+  function yjComputeStats(){
+    const curMonth = yjCurrentMonthKey();
+    const activeLG = yjData.roster.length;
+    const leadersCount = yjData.leaders.length;
+    const mtdVip = yjData.vipLog.reduce((sum,r) => yjMonthKeyOf(r.date) === curMonth ? sum + (Number(r.count)||0) : sum, 0);
+    const allTimeVip = yjData.vipLog.reduce((sum,r) => sum + (Number(r.count)||0), 0);
+    const mtdAttenders = yjData.weekly.reduce((sum,r) => yjMonthKeyOf(r.date) === curMonth ? sum + (Number(r.participants)||0) + (Number(r.firstTimers)||0) : sum, 0);
+    return { activeLG, leadersCount, mtdVip, allTimeVip, mtdAttenders };
+  }
+
+  // Returns { [year]: { total, months: { [1..12]: total } } } from weekly rows that have a date set.
+  function yjYearTotals(){
+    const map = {};
+    yjData.weekly.forEach(r => {
+      const y = yjYearOf(r.date);
+      if(y == null) return;
+      const mk = yjMonthKeyOf(r.date);
+      const month = Number(mk.split('-')[1]);
+      const total = (Number(r.participants)||0) + (Number(r.firstTimers)||0);
+      if(!map[y]) map[y] = { total: 0, months: {} };
+      map[y].total += total;
+      map[y].months[month] = (map[y].months[month] || 0) + total;
+    });
+    return map;
+  }
+
+  async function openYouthJamDashboard(){
+    currentModuleKey = null; // this module doesn't use the generic MODULES/currentRows path
+    document.getElementById('dataModalTitle').textContent = 'Youth Jam Dashboard';
+    document.getElementById('dataModalExternal').classList.add('hidden');
+    document.getElementById('dmSaveStatus').textContent = '';
+    document.getElementById('dmContent').innerHTML = '<div class="dm-empty">Loading…</div>';
+    document.getElementById('dataModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    yjData = await loadYJData();
+    yjSelectedYear = null;
+    renderYJDashboard();
+  }
+
+  function yjEsc(str){ return escapeAttr(str); }
+
+  function renderYJDashboard(){
+    if(currentChart){ currentChart.destroy(); currentChart = null; }
+    const stats = yjComputeStats();
+    const content = document.getElementById('dmContent');
+
+    const rosterRows = yjData.roster.map((r, idx) => `
+      <tr>
+        <td><input type="text" value="${yjEsc(r.name||'')}" placeholder="Name" oninput="yjUpdateRoster(${idx},'name',this.value)"></td>
+        <td><input type="text" value="${yjEsc(r.leader||'')}" placeholder="Network leader" oninput="yjUpdateRoster(${idx},'leader',this.value)"></td>
+        <td><button class="dm-row-delete" onclick="yjDeleteRoster(${idx})" title="Delete">✕</button></td>
+      </tr>`).join('');
+
+    const leaderRows = yjData.leaders.map((l, idx) => `
+      <tr>
+        <td><input type="text" value="${yjEsc(l.name||'')}" placeholder="Name" oninput="yjUpdateLeader(${idx},'name',this.value)"></td>
+        <td><button class="dm-row-delete" onclick="yjDeleteLeader(${idx})" title="Delete">✕</button></td>
+      </tr>`).join('');
+
+    const vipRows = yjData.vipLog.map((v, idx) => `
+      <tr>
+        <td><input type="date" value="${yjEsc(v.date||'')}" oninput="yjUpdateVip(${idx},'date',this.value,false)"></td>
+        <td><input type="number" value="${v.count ?? ''}" placeholder="0" oninput="yjUpdateVip(${idx},'count',this.value,true)"></td>
+        <td><button class="dm-row-delete" onclick="yjDeleteVip(${idx})" title="Delete">✕</button></td>
+      </tr>`).join('');
+
+    const weekRows = yjData.weekly.map((w, idx) => `
+      <tr>
+        <td><input type="date" value="${yjEsc(w.date||'')}" oninput="yjUpdateWeek(${idx},'date',this.value,false)"></td>
+        <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24–30" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
+        <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
+        <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
+        <td><button class="dm-row-delete" onclick="yjDeleteWeek(${idx})" title="Delete">✕</button></td>
+      </tr>`).join('');
+
+    const weekParticipantsTotal = yjData.weekly.reduce((s,r) => s + (Number(r.participants)||0), 0);
+    const weekFirstTimersTotal = yjData.weekly.reduce((s,r) => s + (Number(r.firstTimers)||0), 0);
+
+    content.innerHTML = `
+      <p class="dm-header-sub">Top numbers update automatically from the lists below — nothing to add by hand up here.</p>
+
+      <div class="yj-stats">
+        <div class="yj-stat-card">
+          <div class="yj-stat-label">Active LG Members</div>
+          <div class="yj-stat-value" id="yjStatActiveLG">${stats.activeLG}</div>
+          <div class="yj-stat-hint">from the YJM roster below</div>
+        </div>
+        <div class="yj-stat-card">
+          <div class="yj-stat-label">Youth / LG Leaders</div>
+          <div class="yj-stat-value" id="yjStatLeaders">${stats.leadersCount}</div>
+          <div class="yj-stat-hint">from the leaders list below</div>
+        </div>
+        <div class="yj-stat-card">
+          <div class="yj-stat-label">MTD VIP's</div>
+          <div class="yj-stat-value" id="yjStatMtdVip">${stats.mtdVip}</div>
+          <div class="yj-stat-hint" id="yjStatMtdVipHint">${yjCurrentMonthName()} · ${stats.allTimeVip} all-time</div>
+        </div>
+      </div>
+
+      <div class="yj-flow-grid">
+        <div class="yj-panel">
+          <div class="yj-panel-title">List of YJM <span class="yj-panel-count" id="yjCountRoster">${yjData.roster.length}</span></div>
+          <div class="yj-panel-sub">Name &amp; network leader</div>
+          ${yjData.roster.length ? `
+          <table class="yj-mini-table">
+            <thead><tr><th>Name</th><th>Net. Leader</th><th></th></tr></thead>
+            <tbody id="yjRosterBody">${rosterRows}</tbody>
+          </table>` : `<div class="yj-empty-mini">No members yet.</div>`}
+          <button class="yj-add-btn" onclick="yjAddRoster()">+ Add Member</button>
+        </div>
+
+        <div class="yj-panel">
+          <div class="yj-panel-title">Youth Jam Leaders <span class="yj-panel-count" id="yjCountLeaders">${yjData.leaders.length}</span></div>
+          <div class="yj-panel-sub">Names</div>
+          ${yjData.leaders.length ? `
+          <table class="yj-mini-table">
+            <thead><tr><th>Name</th><th></th></tr></thead>
+            <tbody id="yjLeadersBody">${leaderRows}</tbody>
+          </table>` : `<div class="yj-empty-mini">No leaders yet.</div>`}
+          <button class="yj-add-btn" onclick="yjAddLeader()">+ Add Leader</button>
+        </div>
+
+        <div class="yj-panel">
+          <div class="yj-panel-title">VIP Log <span class="yj-panel-count" id="yjCountVip">${stats.mtdVip}</span></div>
+          <div class="yj-panel-sub">VIP's per Youth Jam date</div>
+          ${yjData.vipLog.length ? `
+          <table class="yj-mini-table">
+            <thead><tr><th>Date</th><th>VIP's</th><th></th></tr></thead>
+            <tbody id="yjVipBody">${vipRows}</tbody>
+          </table>` : `<div class="yj-empty-mini">No dates logged yet.</div>`}
+          <button class="yj-add-btn" onclick="yjAddVip()">+ Add Date</button>
+          <div class="yj-subtotal" id="yjVipSubtotal">Total logged: ${stats.allTimeVip}</div>
+        </div>
+      </div>
+
+      <div class="yj-section-title"><span class="yj-arrow">↓</span> Weekly Attendance (feeds the totals below)</div>
+      <div class="dm-chart-wrap"><canvas id="dmChartCanvas" height="220"></canvas></div>
+      <table class="dm-table">
+        <thead><tr><th>Date</th><th>Week / Date Label</th><th>Participants</th><th>First Timers</th><th></th></tr></thead>
+        <tbody id="yjWeekBody">${weekRows}</tbody>
+        <tfoot><tr class="yj-week-totals"><td colspan="2">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
+      </table>
+      <button class="dm-add-row" onclick="yjAddWeek()">+ Add Week / Date</button>
+
+      <div class="yj-bottom-grid">
+        <div class="yj-stat-card">
+          <div class="yj-stat-label">YJM Month-To-Date</div>
+          <div class="yj-stat-value" id="yjStatMtdAttenders">${stats.mtdAttenders}</div>
+          <div class="yj-stat-hint">total attenders in ${yjCurrentMonthName()}</div>
+        </div>
+        <div class="yj-stat-card" id="yjYtdPanel"></div>
+      </div>
+    `;
+
+    yjRenderChart();
+    yjRenderYtd();
+  }
+
+  const YJ_CHART_COLORS = ['#1440B9','#2C6FC9'];
+
+  function yjRenderChart(){
+    const canvas = document.getElementById('dmChartCanvas');
+    if(!canvas || typeof Chart === 'undefined') return;
+    const labels = yjData.weekly.map(r => r.label || r.date || '(unnamed)');
+    const datasets = [
+      { label: 'Participants', data: yjData.weekly.map(r => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
+      { label: 'First Timers', data: yjData.weekly.map(r => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
+    ];
+    if(currentChart){
+      currentChart.data.labels = labels;
+      currentChart.data.datasets = datasets;
+      currentChart.update();
+      return;
+    }
+    currentChart = new Chart(canvas.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  function yjRenderYtd(){
+    const panel = document.getElementById('yjYtdPanel');
+    if(!panel) return;
+    const yearMap = yjYearTotals();
+    const years = Object.keys(yearMap).map(Number).sort((a,b) => a-b);
+    if(!years.length){
+      panel.innerHTML = `
+        <div class="yj-stat-label">Year To Date</div>
+        <div class="yj-empty-mini" style="padding:10px 0 0;">Add a date to each week above to see yearly totals here.</div>
+      `;
+      return;
+    }
+    if(yjSelectedYear == null || !years.includes(yjSelectedYear)) yjSelectedYear = years[years.length-1];
+    const tabs = years.map(y => `<button class="yj-year-tab${y===yjSelectedYear?' active':''}" onclick="yjSelectYear(${y})">${y}</button>`).join('');
+    const yearData = yearMap[yjSelectedYear];
+    const monthRows = Object.keys(yearData.months).map(Number).sort((a,b)=>a-b)
+      .map(m => `<div class="yj-mini-row"><span>${YJ_MONTH_NAMES[m-1]}</span><span>${yearData.months[m]}</span></div>`).join('');
+    panel.innerHTML = `
+      <div class="yj-stat-label">Year To Date</div>
+      <div class="yj-stat-value">${yearData.total}</div>
+      <div class="yj-stat-hint">total attenders in ${yjSelectedYear}</div>
+      <div class="yj-year-tabs">${tabs}</div>
+      ${monthRows}
+    `;
+  }
+
+  function yjSelectYear(y){
+    yjSelectedYear = y;
+    yjRenderYtd();
+  }
+
+  // ---- Roster (List of YJM) ----
+  function yjUpdateRoster(idx, key, value){
+    yjData.roster[idx][key] = value;
+    scheduleYJSave();
+    scheduleLog('edit', 'Updated a YJM roster entry');
+  }
+  function yjAddRoster(){
+    yjData.roster.push({ name:'', leader:'' });
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('add', 'Youth Jam Dashboard', 'Added a YJM roster entry');
+    setTimeout(() => { const i = document.querySelectorAll('#yjRosterBody input'); if(i.length) i[i.length-2].focus(); }, 0);
+  }
+  function yjDeleteRoster(idx){
+    if(!confirm('Remove this member from the roster?')) return;
+    yjData.roster.splice(idx,1);
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('delete', 'Youth Jam Dashboard', 'Removed a YJM roster entry');
+  }
+
+  // ---- Youth Jam Leaders ----
+  function yjUpdateLeader(idx, key, value){
+    yjData.leaders[idx][key] = value;
+    scheduleYJSave();
+    scheduleLog('edit', 'Updated a Youth Jam leader entry');
+  }
+  function yjAddLeader(){
+    yjData.leaders.push({ name:'' });
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('add', 'Youth Jam Dashboard', 'Added a Youth Jam leader');
+    setTimeout(() => { const i = document.querySelectorAll('#yjLeadersBody input'); if(i.length) i[i.length-1].focus(); }, 0);
+  }
+  function yjDeleteLeader(idx){
+    if(!confirm('Remove this leader?')) return;
+    yjData.leaders.splice(idx,1);
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('delete', 'Youth Jam Dashboard', 'Removed a Youth Jam leader');
+  }
+
+  // ---- VIP Log ----
+  function yjPatchVipStats(){
+    const stats = yjComputeStats();
+    const val = document.getElementById('yjStatMtdVip'); if(val) val.textContent = stats.mtdVip;
+    const hint = document.getElementById('yjStatMtdVipHint'); if(hint) hint.textContent = yjCurrentMonthName() + ' · ' + stats.allTimeVip + ' all-time';
+    const badge = document.getElementById('yjCountVip'); if(badge) badge.textContent = stats.mtdVip;
+    const sub = document.getElementById('yjVipSubtotal'); if(sub) sub.textContent = 'Total logged: ' + stats.allTimeVip;
+  }
+  function yjUpdateVip(idx, key, value, isNumber){
+    yjData.vipLog[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
+    scheduleYJSave();
+    yjPatchVipStats();
+    scheduleLog('edit', 'Updated a VIP log entry');
+  }
+  function yjAddVip(){
+    yjData.vipLog.push({ date:'', count:'' });
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('add', 'Youth Jam Dashboard', 'Added a VIP log entry');
+  }
+  function yjDeleteVip(idx){
+    if(!confirm('Delete this VIP log entry?')) return;
+    yjData.vipLog.splice(idx,1);
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a VIP log entry');
+  }
+
+  // ---- Weekly attendance ----
+  function yjUpdateWeeklyTotalsRow(){
+    const row = document.querySelector('.yj-week-totals');
+    if(!row) return;
+    const tds = row.querySelectorAll('td');
+    const pTotal = yjData.weekly.reduce((s,r) => s + (Number(r.participants)||0), 0);
+    const fTotal = yjData.weekly.reduce((s,r) => s + (Number(r.firstTimers)||0), 0);
+    if(tds[1]) tds[1].textContent = pTotal;
+    if(tds[2]) tds[2].textContent = fTotal;
+  }
+  function yjUpdateWeek(idx, key, value, isNumber){
+    yjData.weekly[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
+    scheduleYJSave();
+    yjUpdateWeeklyTotalsRow();
+    yjRenderChart();
+    const mtdEl = document.getElementById('yjStatMtdAttenders');
+    if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
+    yjRenderYtd();
+    scheduleLog('edit', 'Updated a weekly attendance entry');
+  }
+  function yjAddWeek(){
+    yjData.weekly.push({ date:'', label:'', participants:'', firstTimers:'' });
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('add', 'Youth Jam Dashboard', 'Added a weekly attendance entry');
+    setTimeout(() => { const i = document.querySelectorAll('#yjWeekBody input'); if(i.length) i[i.length-4].focus(); }, 0);
+  }
+  function yjDeleteWeek(idx){
+    if(!confirm('Delete this week? This cannot be undone.')) return;
+    yjData.weekly.splice(idx,1);
+    scheduleYJSave();
+    renderYJDashboard();
+    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a weekly attendance entry');
+  }
+
+  // Lightweight, debounced activity-log entry for per-keystroke edits (avoids
+  // spamming the log on every character typed).
+  let yjLogTimer = null;
+  function scheduleLog(action, detail){
+    clearTimeout(yjLogTimer);
+    yjLogTimer = setTimeout(() => logActivity(action, 'Youth Jam Dashboard', detail), 800);
   }
 
   // ---- Installable app (phone home screen / desktop app) ----------------
