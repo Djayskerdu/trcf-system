@@ -1926,6 +1926,12 @@
     if(isNaN(d)) return null;
     return d.getFullYear();
   }
+  function yjMonthOf(dateStr){
+    if(!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if(isNaN(d)) return null;
+    return d.getMonth()+1;
+  }
   function yjCurrentMonthKey(){
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
@@ -1940,25 +1946,52 @@
     if(yjStatsMonth == null) yjStatsMonth = new Date().getMonth() + 1;
     if(yjStatsYear == null) yjStatsYear = new Date().getFullYear();
   }
-  function yjStatsMonthKey(){
-    yjEnsureStatsMonth();
-    return yjStatsYear + '-' + String(yjStatsMonth).padStart(2,'0');
-  }
   function yjStatsMonthName(){
     yjEnsureStatsMonth();
-    return YJ_MONTH_NAMES[yjStatsMonth-1];
+    return yjStatsMonth === 'all' ? 'All Months' : YJ_MONTH_NAMES[yjStatsMonth-1];
+  }
+
+  // Human-readable description of whatever the "Viewing month/year" picker
+  // is currently set to, including the "All" states — used in the stat-card
+  // hints so they always describe exactly what's being counted.
+  function yjStatsPeriodLabel(){
+    yjEnsureStatsMonth();
+    const monthAll = yjStatsMonth === 'all';
+    const yearAll = yjStatsYear === 'all';
+    if(monthAll && yearAll) return 'all dates';
+    if(monthAll) return `all months, ${yjStatsYear}`;
+    if(yearAll) return `${YJ_MONTH_NAMES[yjStatsMonth-1]} (all years)`;
+    return `${YJ_MONTH_NAMES[yjStatsMonth-1]} ${yjStatsYear}`;
+  }
+
+  // Central filter check shared by the weekly table, the chart, and the
+  // VIP/attenders stats: a row matches unless its month/year picker is set
+  // to a specific value and this row's month/year doesn't match it. Setting
+  // either dropdown to "All" makes that dimension match everything.
+  function yjRowMatchesStatsFilter(monthVal, yearVal){
+    yjEnsureStatsMonth();
+    const monthOk = (yjStatsMonth === 'all') || (Number(monthVal) === yjStatsMonth);
+    const yearOk = (yjStatsYear === 'all') || (Number(yearVal) === yjStatsYear);
+    return monthOk && yearOk;
+  }
+
+  // Weekly attendance rows that match the current "Viewing month/year"
+  // picker, paired with their real index in yjData.weekly (so edit/delete
+  // buttons keep working correctly even though the table only shows a
+  // filtered subset).
+  function yjFilteredWeeklyEntries(){
+    return yjData.weekly
+      .map((w, idx) => ({ w, idx }))
+      .filter(({ w }) => yjRowMatchesStatsFilter(w.month, w.year));
   }
 
   function yjComputeStats(){
     yjEnsureStatsMonth();
-    const statMonthKey = yjStatsMonthKey();
-    const statMonthNum = yjStatsMonth;
-    const statYearNum = yjStatsYear;
     const activeLG = yjData.roster.length;
     const leadersCount = yjData.leaders.length;
-    const mtdVip = yjData.vipLog.reduce((sum,r) => yjMonthKeyOf(r.date) === statMonthKey ? sum + (Number(r.count)||0) : sum, 0);
+    const mtdVip = yjData.vipLog.reduce((sum,r) => yjRowMatchesStatsFilter(yjMonthOf(r.date), yjYearOf(r.date)) ? sum + (Number(r.count)||0) : sum, 0);
     const allTimeVip = yjData.vipLog.reduce((sum,r) => sum + (Number(r.count)||0), 0);
-    const mtdAttenders = yjData.weekly.reduce((sum,r) => (Number(r.month) === statMonthNum && Number(r.year) === statYearNum) ? sum + (Number(r.participants)||0) + (Number(r.firstTimers)||0) : sum, 0);
+    const mtdAttenders = yjFilteredWeeklyEntries().reduce((sum,{w}) => sum + (Number(w.participants)||0) + (Number(w.firstTimers)||0), 0);
     return { activeLG, leadersCount, mtdVip, allTimeVip, mtdAttenders };
   }
 
@@ -1968,20 +2001,20 @@
   // a brand-new dashboard.
   function yjStatsYearOptions(){
     const years = new Set([new Date().getFullYear()]);
-    if(yjStatsYear != null) years.add(yjStatsYear);
+    if(yjStatsYear != null && yjStatsYear !== 'all') years.add(yjStatsYear);
     yjData.weekly.forEach(r => { if(r.year !== '' && r.year != null) years.add(Number(r.year)); });
     yjData.vipLog.forEach(r => { const y = yjYearOf(r.date); if(y != null) years.add(y); });
     return Array.from(years).sort((a,b) => a-b);
   }
 
   function yjSetStatsMonth(v){
-    yjStatsMonth = Number(v);
-    yjRefreshStatsPanel();
+    yjStatsMonth = (v === 'all') ? 'all' : Number(v);
+    yjApplyStatsFilter();
     scheduleLog('edit', 'Changed the dashboard\'s viewing month');
   }
   function yjSetStatsYear(v){
-    yjStatsYear = Number(v);
-    yjRefreshStatsPanel();
+    yjStatsYear = (v === 'all') ? 'all' : Number(v);
+    yjApplyStatsFilter();
     scheduleLog('edit', 'Changed the dashboard\'s viewing year');
   }
 
@@ -1990,10 +2023,20 @@
   function yjRefreshStatsPanel(){
     const stats = yjComputeStats();
     const mtdVipEl = document.getElementById('yjStatMtdVip'); if(mtdVipEl) mtdVipEl.textContent = stats.mtdVip;
-    const mtdVipHint = document.getElementById('yjStatMtdVipHint'); if(mtdVipHint) mtdVipHint.textContent = yjStatsMonthName() + ' · ' + stats.allTimeVip + ' all-time';
+    const mtdVipHint = document.getElementById('yjStatMtdVipHint'); if(mtdVipHint) mtdVipHint.textContent = yjStatsPeriodLabel() + ' · ' + stats.allTimeVip + ' all-time';
     const vipBadge = document.getElementById('yjCountVip'); if(vipBadge) vipBadge.textContent = stats.mtdVip;
     const attEl = document.getElementById('yjStatMtdAttenders'); if(attEl) attEl.textContent = stats.mtdAttenders;
-    const attHint = document.getElementById('yjStatMtdAttendersHint'); if(attHint) attHint.textContent = 'total attenders in ' + yjStatsMonthName();
+    const attHint = document.getElementById('yjStatMtdAttendersHint'); if(attHint) attHint.textContent = 'total attenders in ' + yjStatsPeriodLabel();
+  }
+
+  // Runs whenever the "Viewing month/year" picker changes: refreshes the
+  // top stat cards AND re-filters the weekly table + chart to match, since
+  // all three are driven by the same picker (including its "All" option).
+  function yjApplyStatsFilter(){
+    yjRefreshStatsPanel();
+    yjRenderWeekBody();
+    yjUpdateWeeklyTotalsRow();
+    yjRenderChart();
   }
 
   // Returns { [year]: { total, months: { [1..12]: total } } } from weekly rows that have a date set.
@@ -2037,7 +2080,7 @@
     return `
       <tr>
         <td><select onchange="yjUpdateWeek(${idx},'month',this.value,true)"><option value="">Month</option>${monthOptions}</select></td>
-        <td><input type="number" value="${w.year ?? ''}" placeholder="${new Date().getFullYear()}" min="2000" max="2100" oninput="yjUpdateWeek(${idx},'year',this.value,true)"></td>
+        <td><input type="number" value="${w.year ?? ''}" placeholder="${new Date().getFullYear()}" min="2000" max="2100" oninput="yjUpdateWeek(${idx},'year',this.value,true)" onblur="yjRenderWeekBody()"></td>
         <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24\u201330" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
         <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
         <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
@@ -2050,7 +2093,11 @@
   // scroll box is affected.
   function yjRenderWeekBody(){
     const body = document.getElementById('yjWeekBody');
-    if(body) body.innerHTML = yjData.weekly.map((w, idx) => yjWeekRowHtml(w, idx)).join('');
+    if(!body) return;
+    const entries = yjFilteredWeeklyEntries();
+    body.innerHTML = entries.length
+      ? entries.map(({w, idx}) => yjWeekRowHtml(w, idx)).join('')
+      : `<tr><td colspan="6" class="yj-empty-mini" style="text-align:center;padding:14px 0;">No weekly entries for ${yjStatsPeriodLabel()}.</td></tr>`;
   }
 
   // Sortable header for the weekly attendance table. Sorting only reorders
@@ -2188,10 +2235,13 @@
     const stats = yjComputeStats();
     const content = document.getElementById('dmContent');
 
-    const weekRows = yjData.weekly.map((w, idx) => yjWeekRowHtml(w, idx)).join('');
+    const weekEntries = yjFilteredWeeklyEntries();
+    const weekRows = weekEntries.length
+      ? weekEntries.map(({w, idx}) => yjWeekRowHtml(w, idx)).join('')
+      : `<tr><td colspan="6" class="yj-empty-mini" style="text-align:center;padding:14px 0;">No weekly entries for ${yjStatsPeriodLabel()}.</td></tr>`;
 
-    const weekParticipantsTotal = yjData.weekly.reduce((s,r) => s + (Number(r.participants)||0), 0);
-    const weekFirstTimersTotal = yjData.weekly.reduce((s,r) => s + (Number(r.firstTimers)||0), 0);
+    const weekParticipantsTotal = weekEntries.reduce((s,{w}) => s + (Number(w.participants)||0), 0);
+    const weekFirstTimersTotal = weekEntries.reduce((s,{w}) => s + (Number(w.firstTimers)||0), 0);
 
     content.innerHTML = `
       <p class="dm-header-sub">Top numbers update automatically from the lists below — nothing to add by hand up here.</p>
@@ -2199,9 +2249,11 @@
       <div class="yj-stats-month-picker">
         <span class="yj-stats-month-picker-label">Viewing month:</span>
         <select id="yjStatsMonthSelect" onchange="yjSetStatsMonth(this.value)">
+          <option value="all" ${yjStatsMonth==='all'?'selected':''}>All</option>
           ${YJ_MONTH_NAMES.map((name,i) => `<option value="${i+1}" ${yjStatsMonth===i+1?'selected':''}>${name}</option>`).join('')}
         </select>
         <select id="yjStatsYearSelect" onchange="yjSetStatsYear(this.value)">
+          <option value="all" ${yjStatsYear==='all'?'selected':''}>All</option>
           ${yjStatsYearOptions().map(y => `<option value="${y}" ${yjStatsYear===y?'selected':''}>${y}</option>`).join('')}
         </select>
       </div>
@@ -2220,7 +2272,7 @@
         <div class="yj-stat-card">
           <div class="yj-stat-label">MTD VIP's</div>
           <div class="yj-stat-value" id="yjStatMtdVip">${stats.mtdVip}</div>
-          <div class="yj-stat-hint" id="yjStatMtdVipHint">${yjStatsMonthName()} · ${stats.allTimeVip} all-time</div>
+          <div class="yj-stat-hint" id="yjStatMtdVipHint">${yjStatsPeriodLabel()} · ${stats.allTimeVip} all-time</div>
         </div>
       </div>
 
@@ -2273,7 +2325,7 @@
             <div class="yj-stat-card">
               <div class="yj-stat-label">YJM Month-To-Date</div>
               <div class="yj-stat-value" id="yjStatMtdAttenders">${stats.mtdAttenders}</div>
-              <div class="yj-stat-hint" id="yjStatMtdAttendersHint">total attenders in ${yjStatsMonthName()}</div>
+              <div class="yj-stat-hint" id="yjStatMtdAttendersHint">total attenders in ${yjStatsPeriodLabel()}</div>
             </div>
             <div class="yj-stat-card" id="yjYtdPanel"></div>
           </div>
@@ -2290,7 +2342,8 @@
   function yjRenderChart(){
     const canvas = document.getElementById('dmChartCanvas');
     if(!canvas || typeof Chart === 'undefined') return;
-    const labels = yjData.weekly.map(r => {
+    const entries = yjFilteredWeeklyEntries();
+    const labels = entries.map(({w:r}) => {
       const monthName = r.month ? YJ_MONTH_NAMES[r.month-1] : '';
       if(r.label && monthName) return `${monthName} ${r.label}`;
       if(r.label) return r.label;
@@ -2298,8 +2351,8 @@
       return '(unnamed)';
     });
     const datasets = [
-      { label: 'Participants', data: yjData.weekly.map(r => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
-      { label: 'First Timers', data: yjData.weekly.map(r => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
+      { label: 'Participants', data: entries.map(({w:r}) => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
+      { label: 'First Timers', data: entries.map(({w:r}) => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
     ];
     if(currentChart){
       currentChart.data.labels = labels;
@@ -2652,7 +2705,7 @@
   function yjPatchVipStats(){
     const stats = yjComputeStats();
     const val = document.getElementById('yjStatMtdVip'); if(val) val.textContent = stats.mtdVip;
-    const hint = document.getElementById('yjStatMtdVipHint'); if(hint) hint.textContent = yjStatsMonthName() + ' · ' + stats.allTimeVip + ' all-time';
+    const hint = document.getElementById('yjStatMtdVipHint'); if(hint) hint.textContent = yjStatsPeriodLabel() + ' · ' + stats.allTimeVip + ' all-time';
     const badge = document.getElementById('yjCountVip'); if(badge) badge.textContent = stats.mtdVip;
     const sub = document.getElementById('yjVipSubtotal'); if(sub) sub.textContent = 'Total logged: ' + stats.allTimeVip;
   }
@@ -2683,14 +2736,21 @@
     const row = document.querySelector('.yj-week-totals');
     if(!row) return;
     const tds = row.querySelectorAll('td');
-    const pTotal = yjData.weekly.reduce((s,r) => s + (Number(r.participants)||0), 0);
-    const fTotal = yjData.weekly.reduce((s,r) => s + (Number(r.firstTimers)||0), 0);
+    const entries = yjFilteredWeeklyEntries();
+    const pTotal = entries.reduce((s,{w}) => s + (Number(w.participants)||0), 0);
+    const fTotal = entries.reduce((s,{w}) => s + (Number(w.firstTimers)||0), 0);
     if(tds[1]) tds[1].textContent = pTotal;
     if(tds[2]) tds[2].textContent = fTotal;
   }
   function yjUpdateWeek(idx, key, value, isNumber){
     yjData.weekly[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleYJSave();
+    // If the month just changed pulls this row outside the current
+    // "Viewing month/year" filter, re-render the whole body so it drops
+    // out of view. (Year is handled on blur instead — see the row markup —
+    // since it's a free-typed number field and re-rendering on every
+    // keystroke would kick focus out mid-typing.)
+    if(key === 'month') yjRenderWeekBody();
     yjUpdateWeeklyTotalsRow();
     yjRenderChart();
     const mtdEl = document.getElementById('yjStatMtdAttenders');
@@ -2700,7 +2760,10 @@
     scheduleLog('edit', 'Updated a weekly attendance entry');
   }
   function yjAddWeek(){
-    yjData.weekly.push({ month:'', year:'', label:'', participants:'', firstTimers:'' });
+    yjEnsureStatsMonth();
+    const presetMonth = (yjStatsMonth === 'all') ? '' : yjStatsMonth;
+    const presetYear = (yjStatsYear === 'all') ? '' : yjStatsYear;
+    yjData.weekly.push({ month:presetMonth, year:presetYear, label:'', participants:'', firstTimers:'' });
     scheduleYJSave();
     yjRenderWeekBody();
     yjUpdateWeeklyTotalsRow();
