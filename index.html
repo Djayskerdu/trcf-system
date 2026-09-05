@@ -1914,6 +1914,25 @@
 
   function yjEsc(str){ return escapeAttr(str); }
 
+  function yjWeekRowHtml(w, idx){
+    return `
+      <tr>
+        <td><input type="date" value="${yjEsc(w.date||'')}" oninput="yjUpdateWeek(${idx},'date',this.value,false)"></td>
+        <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24–30" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
+        <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
+        <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
+        <td><button class="dm-row-delete" onclick="yjDeleteWeek(${idx})" title="Delete">✕</button></td>
+      </tr>`;
+  }
+
+  // Re-renders just the weekly table body in place (no full dashboard rebuild),
+  // so the outer modal's scroll position never jumps — only the table's own
+  // scroll box is affected.
+  function yjRenderWeekBody(){
+    const body = document.getElementById('yjWeekBody');
+    if(body) body.innerHTML = yjData.weekly.map((w, idx) => yjWeekRowHtml(w, idx)).join('');
+  }
+
   const YJ_SUB_CONFIG = {
     roster: {
       title: 'List of YJM',
@@ -1989,14 +2008,7 @@
     const stats = yjComputeStats();
     const content = document.getElementById('dmContent');
 
-    const weekRows = yjData.weekly.map((w, idx) => `
-      <tr>
-        <td><input type="date" value="${yjEsc(w.date||'')}" oninput="yjUpdateWeek(${idx},'date',this.value,false)"></td>
-        <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24–30" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
-        <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
-        <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
-        <td><button class="dm-row-delete" onclick="yjDeleteWeek(${idx})" title="Delete">✕</button></td>
-      </tr>`).join('');
+    const weekRows = yjData.weekly.map((w, idx) => yjWeekRowHtml(w, idx)).join('');
 
     const weekParticipantsTotal = yjData.weekly.reduce((s,r) => s + (Number(r.participants)||0), 0);
     const weekFirstTimersTotal = yjData.weekly.reduce((s,r) => s + (Number(r.firstTimers)||0), 0);
@@ -2235,7 +2247,10 @@
   function yjAddWeek(){
     yjData.weekly.push({ date:'', label:'', participants:'', firstTimers:'' });
     scheduleYJSave();
-    renderYJDashboard();
+    yjRenderWeekBody();
+    yjUpdateWeeklyTotalsRow();
+    yjRenderChart();
+    yjRenderYtd();
     logActivity('add', 'Youth Jam Dashboard', 'Added a weekly attendance entry');
     setTimeout(() => { const i = document.querySelectorAll('#yjWeekBody input'); if(i.length) i[i.length-4].focus(); }, 0);
   }
@@ -2243,7 +2258,12 @@
     if(!confirm('Delete this week? This cannot be undone.')) return;
     yjData.weekly.splice(idx,1);
     scheduleYJSave();
-    renderYJDashboard();
+    yjRenderWeekBody();
+    yjUpdateWeeklyTotalsRow();
+    yjRenderChart();
+    const mtdEl = document.getElementById('yjStatMtdAttenders');
+    if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
+    yjRenderYtd();
     logActivity('delete', 'Youth Jam Dashboard', 'Deleted a weekly attendance entry');
   }
 
