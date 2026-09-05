@@ -2289,7 +2289,13 @@
   function yjRenderChart(){
     const canvas = document.getElementById('dmChartCanvas');
     if(!canvas || typeof Chart === 'undefined') return;
-    const labels = yjData.weekly.map(r => r.label || ((r.month && r.year) ? `${YJ_MONTH_NAMES[r.month-1]} ${r.year}` : '(unnamed)'));
+    const labels = yjData.weekly.map(r => {
+      const monthName = r.month ? YJ_MONTH_NAMES[r.month-1] : '';
+      if(r.label && monthName) return `${monthName} ${r.label}`;
+      if(r.label) return r.label;
+      if(monthName && r.year) return `${monthName} ${r.year}`;
+      return '(unnamed)';
+    });
     const datasets = [
       { label: 'Participants', data: yjData.weekly.map(r => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
       { label: 'First Timers', data: yjData.weekly.map(r => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
