@@ -788,6 +788,8 @@
   .yj-mini-table input:focus{border-color:var(--green); background:#fff; outline:none; box-shadow:0 0 0 3px var(--ring);}
   .yj-add-btn{margin-top:10px; background:none; border:1.5px dashed var(--gold); color:var(--gold); font-weight:700; font-size:12px; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%; font-family:'Inter',sans-serif;}
   .yj-add-btn:hover{background:var(--ring);}
+  .yj-import-btn{border-style:solid; border-color:var(--green); color:var(--green); margin-top:8px;}
+  .yj-import-btn:disabled{opacity:0.6; cursor:not-allowed;}
   .yj-subtotal{margin-top:8px; font-size:11px; color:var(--sub); text-align:right;}
   .yj-section-title{font-family:'Poppins',sans-serif; font-weight:700; font-size:13.5px; color:var(--ink); margin:26px 0 12px; display:flex; align-items:center; gap:8px;}
   .yj-section-title .yj-arrow{color:var(--sub); font-weight:400;}
@@ -1824,6 +1826,13 @@
   // blob at storage key 'module:youthJam'.
   const YJ_KEY = 'module:youthJam';
   const YJ_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Public "Members" tab of the Youth Jam Database sheet, read via the gviz
+  // CSV endpoint (works cross-origin for a sheet shared as "Anyone with the
+  // link can view", no API key needed). Only used for the one-way "Import
+  // from Sheet" button on the roster \u2014 imported rows stay fully editable/
+  // deletable afterward, and re-importing never overwrites local edits to
+  // members not present in the sheet, nor deletes anyone.
+  const YJ_ROSTER_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1dofQu2rCncROR-91po8JFj0z6nWSdWBbahpdDKC2GQg/gviz/tq?tqx=out:csv&gid=1341531498';
   let yjData = null;
   let yjSubModalKey = null;
   let yjSaveTimer = null;
@@ -2087,6 +2096,8 @@
       title: 'List of YJM',
       addLabel: '+ Add Member',
       addFn: 'yjAddRoster',
+      importLabel: '↻ Import from Sheet',
+      importFn: 'yjImportRosterFromSheet',
       bodyId: 'yjRosterBody',
       emptyText: 'No members yet.',
       head: '<tr><th>Name</th><th>Net. Leader</th><th></th></tr>',
@@ -2149,6 +2160,10 @@
         <tbody id="${cfg.bodyId}">${rows}</tbody>
       </table>` : `<div class="yj-empty-mini">${cfg.emptyText}</div>`}
       <button class="yj-add-btn" onclick="${cfg.addFn}()">${cfg.addLabel}</button>
+      ${cfg.importFn ? `
+        <button class="yj-add-btn yj-import-btn" id="yjRosterImportBtn" onclick="${cfg.importFn}()">${cfg.importLabel}</button>
+        <div class="yj-empty-mini" id="yjRosterImportStatus" style="text-align:center;"></div>
+      ` : ''}
     `;
   }
 
@@ -2314,7 +2329,7 @@
     scheduleLog('edit', 'Updated a YJM roster entry');
   }
   function yjAddRoster(){
-    yjData.roster.push({ name:'', leader:'' });
+    yjData.roster.push({ name:'', leader:'', memberId:'' });
     scheduleYJSave();
     renderYJDashboard();
     yjRenderSubModalContent();
@@ -2328,6 +2343,99 @@
     renderYJDashboard();
     yjRenderSubModalContent();
     logActivity('delete', 'Youth Jam Dashboard', 'Removed a YJM roster entry');
+  }
+
+  // Parses CSV text (as returned by the Google Sheets gviz CSV export) into
+  // an array of row arrays. Handles quoted fields, escaped "" quotes, and
+  // commas/newlines inside quotes.
+  function yjParseCSV(text){
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for(let i = 0; i < text.length; i++){
+      const c = text[i], next = text[i+1];
+      if(inQuotes){
+        if(c === '"' && next === '"'){ field += '"'; i++; }
+        else if(c === '"'){ inQuotes = false; }
+        else { field += c; }
+      } else {
+        if(c === '"'){ inQuotes = true; }
+        else if(c === ','){ row.push(field); field = ''; }
+        else if(c === '\r'){ /* skip, \n handles the line break */ }
+        else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+        else { field += c; }
+      }
+    }
+    row.push(field);
+    if(row.length > 1 || row[0] !== '') rows.push(row);
+    return rows;
+  }
+
+  // Imports members from the public "Members" tab of the Youth Jam Database
+  // sheet. This is a one-way, additive sync: it adds members that aren't in
+  // the roster yet (matched by MemberID) and refreshes the name/leader on
+  // ones it already added before, but it never deletes or overwrites a
+  // member you've since edited or removed here \u2014 the app stays the source
+  // of truth for who's active once you've touched an entry manually.
+  async function yjImportRosterFromSheet(){
+    const btn = document.getElementById('yjRosterImportBtn');
+    const status = document.getElementById('yjRosterImportStatus');
+    if(btn) btn.disabled = true;
+    if(status) status.textContent = 'Importing from sheet…';
+    try {
+      const res = await fetch(YJ_ROSTER_SHEET_CSV_URL);
+      if(!res.ok) throw new Error('Sheet request failed (' + res.status + ')');
+      const text = await res.text();
+      const table = yjParseCSV(text).filter(r => r.some(cell => (cell||'').trim() !== ''));
+      if(!table.length) throw new Error('No rows found in the sheet.');
+
+      const header = table[0].map(h => (h||'').trim().toLowerCase());
+      const idIdx = header.indexOf('memberid');
+      const nameIdx = header.indexOf('fullname');
+      const leaderIdx = header.indexOf('lgleader');
+      if(idIdx === -1 || nameIdx === -1){
+        throw new Error('Could not find MemberID/FullName columns.');
+      }
+
+      const existingById = new Map();
+      yjData.roster.forEach(r => { if(r.memberId) existingById.set(r.memberId, r); });
+
+      let added = 0, updated = 0;
+      for(let i = 1; i < table.length; i++){
+        const cells = table[i];
+        const memberId = (cells[idIdx] || '').trim();
+        const name = (cells[nameIdx] || '').trim();
+        const leader = leaderIdx !== -1 ? (cells[leaderIdx] || '').trim() : '';
+        if(!memberId && !name) continue; // skip fully blank rows
+
+        const existing = memberId ? existingById.get(memberId) : null;
+        if(existing){
+          if(existing.name !== name || existing.leader !== leader){
+            existing.name = name;
+            existing.leader = leader;
+            updated++;
+          }
+        } else {
+          const entry = { name, leader, memberId };
+          yjData.roster.push(entry);
+          if(memberId) existingById.set(memberId, entry);
+          added++;
+        }
+      }
+
+      scheduleYJSave();
+      renderYJDashboard();
+      yjRenderSubModalContent();
+      const msg = `Imported: ${added} new, ${updated} updated.`;
+      const freshStatus = document.getElementById('yjRosterImportStatus');
+      if(freshStatus) freshStatus.textContent = msg;
+      logActivity('edit', 'Youth Jam Dashboard', `Imported YJM roster from sheet (${added} new, ${updated} updated)`);
+    } catch(err){
+      const freshStatus = document.getElementById('yjRosterImportStatus');
+      if(freshStatus) freshStatus.textContent = 'Import failed: ' + err.message + ' (make sure the sheet is shared as "Anyone with the link can view").';
+    } finally {
+      const freshBtn = document.getElementById('yjRosterImportBtn');
+      if(freshBtn) freshBtn.disabled = false;
+    }
   }
 
   // ---- Youth Jam Leaders ----
