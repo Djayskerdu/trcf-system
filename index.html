@@ -938,60 +938,64 @@
         <p>Master tracker plus each network leader's individual cell report for 2026</p>
       </div>
     </div>
-    <button type="button" class="master-tile tile-crud" data-module="networkLeaders" data-name="network leaders cell reports">
+    <button type="button" class="master-tile" onclick="toggleLeaders()" data-name="network leaders cell reports">
       <div class="master-left">
         <div class="master-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M17 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div>
           <div class="master-title">Network Leaders Cell Reports</div>
-          <div class="master-desc">Admin-editable — number of cells &amp; total members per leader</div>
+          <div class="master-desc">Tap to view each network leader's own cell report app</div>
         </div>
       </div>
-      <div class="master-go">MANAGE →</div>
+      <div class="master-go">VIEW LEADERS ↓</div>
     </button>
 
     <button class="toggle-row" id="toggleBtn" onclick="toggleLeaders()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1440B9" stroke-width="3"><path d="M9 18l6-6-6-6"/></svg>
-      <span id="toggleLabel">Show individual leader reports (9)</span>
+      <span id="toggleLabel">Show individual leader reports (10)</span>
     </button>
 
     <div class="grid leader-list collapsed" id="grid-leaders">
-      <a class="leader-row" data-name="abraham cell report 2026" href="https://docs.google.com/spreadsheets/d/1hKSdt9bJ-uYnE3BQEeuvxJM7FQQiVM1iH6hnRF9iNdc/edit?gid=382267683#gid=382267683" target="_blank">
+      <a class="leader-row" data-name="abraham cell report 2026" href="https://abraham-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#0D2C86">A</div>
         <div><div class="leader-name">Abraham</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="imee cell report 2026" href="https://docs.google.com/spreadsheets/d/1qubNYArJ_o-NOeQk2hZeFUOrdLbUV8E8c11qGfeWeBs/edit?gid=628920897#gid=628920897" target="_blank">
+      <a class="leader-row" data-name="imee cell report 2026" href="https://imee-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#2C5F8A">I</div>
         <div><div class="leader-name">Imee</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="pendon cell report 2026" href="https://docs.google.com/spreadsheets/d/1K5nst9ab26HpbmdqOe2jrbwqulmHl7kyRCpylD9voH0/edit?gid=566172796#gid=566172796" target="_blank">
+      <a class="leader-row" data-name="pendon cell report 2026" href="https://pendon-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#1E4D91">P</div>
         <div><div class="leader-name">Pendon</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="laparan cell report 2026" href="https://docs.google.com/spreadsheets/d/1zKIDwEIcRtCZzFrgLFhr9dSiaBHZYrqdhCFhttopmFU/edit?gid=1783058890#gid=1783058890" target="_blank">
+      <a class="leader-row" data-name="laparan cell report 2026" href="https://avril-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#3B6FA0">L</div>
         <div><div class="leader-name">Laparan</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="franklin cell report 2026" href="https://docs.google.com/spreadsheets/d/1DX7FP3ENWkQT631_gdfzGwJ6XvzFODHIWk4-Rf67DXY/edit?gid=1384740190#gid=1384740190" target="_blank">
+      <a class="leader-row" data-name="franklin cell report 2026" href="https://franklin-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#2C6FC9">F</div>
         <div><div class="leader-name">Franklin</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="sonny cell report 2026" href="https://docs.google.com/spreadsheets/d/1D571Yrj1THkswVhl_iuA1_Kqmzy-5pUzqL6ueIoANAQ/edit?gid=704145983#gid=704145983" target="_blank">
+      <a class="leader-row" data-name="sonny cell report 2026" href="https://sonny-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#3D4C63">S</div>
         <div><div class="leader-name">Sonny</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="jay cell report 2026" href="https://docs.google.com/spreadsheets/d/1cCM6VtMzu3b-Dra-BNnlcd6e-vxt_7H8F80Jf_mFCpA/edit?gid=1140271647#gid=1140271647" target="_blank">
+      <a class="leader-row" data-name="jay cell report 2026" href="https://jay-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#123974">J</div>
         <div><div class="leader-name">Jay</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
-      <a class="leader-row" data-name="jotoy cell report 2026 v2" href="https://docs.google.com/spreadsheets/d/1Yyn3rLtc3rKzZmxLm9ssf3rMYFHNFmhaJtsak6xWTx8/edit?gid=1419017072#gid=1419017072" target="_blank">
+      <a class="leader-row" data-name="jotoy cell report 2026 v2" href="https://jotoys-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#0D2C86">J</div>
         <div><div class="leader-name">Jotoy</div><div class="leader-sub">Cell Report 2026 (V2)</div></div>
       </a>
-      <a class="leader-row" data-name="rodemio cell report 2026" href="https://docs.google.com/spreadsheets/d/1KaJu3rUfQxoguFKd-KWFgnaDf5Ptn0icHr2q0OCeM1w/edit?gid=712607396#gid=712607396" target="_blank">
+      <a class="leader-row" data-name="rodemio cell report 2026" href="https://rodemio-cell-report.vercel.app/" target="_blank">
         <div class="leader-avatar" style="background:#2C5F8A">R</div>
         <div><div class="leader-name">Rodemio</div><div class="leader-sub">Cell Report 2026</div></div>
+      </a>
+      <a class="leader-row" data-name="jacaria cell report 2026" href="https://jacaria-cell-report.vercel.app/" target="_blank">
+        <div class="leader-avatar" style="background:#0F3D73">J</div>
+        <div><div class="leader-name">Jacaria</div><div class="leader-sub">Cell Report 2026</div></div>
       </a>
     </div>
   </section>
@@ -1419,7 +1423,7 @@
     }
   });
 
-  const TOTAL_SYSTEMS = 16; // master + 9 leaders + 6 other systems
+  const TOTAL_SYSTEMS = 17; // master + 10 leaders + 6 other systems
 
   function toggleLeaders(){
     const list = document.getElementById('grid-leaders');
@@ -1428,7 +1432,7 @@
     const opening = list.classList.contains('collapsed');
     list.classList.toggle('collapsed');
     btn.classList.toggle('open');
-    label.textContent = opening ? 'Hide individual leader reports' : 'Show individual leader reports (9)';
+    label.textContent = opening ? 'Hide individual leader reports' : 'Show individual leader reports (10)';
   }
 
   function filterTiles(){
@@ -1451,7 +1455,7 @@
     } else if(!q){
       list.classList.add('collapsed');
       document.getElementById('toggleBtn').classList.remove('open');
-      document.getElementById('toggleLabel').textContent = 'Show individual leader reports (9)';
+      document.getElementById('toggleLabel').textContent = 'Show individual leader reports (10)';
     }
     document.getElementById('count').textContent = q ? visible : TOTAL_SYSTEMS;
   }
