@@ -661,6 +661,7 @@
   @keyframes wBadgePop{0%{transform:scale(0.4) rotate(-15deg);opacity:0}70%{transform:scale(1.12) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0deg);opacity:1}}
   @keyframes wBadgePulse{0%,100%{box-shadow:0 8px 18px rgba(20,64,185,0.45),0 0 0 0 rgba(20,64,185,0.35)}70%{box-shadow:0 8px 18px rgba(20,64,185,0.45),0 0 0 14px rgba(20,64,185,0)}}
   @keyframes wTextFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes wWordReveal{from{opacity:0;transform:translateY(10px) scale(0.94)}to{opacity:1;transform:translateY(0) scale(1)}}
   @keyframes wShimmer{0%{background-position:-200% center}100%{background-position:200% center}}
   @keyframes wParticleFloat{0%{transform:translateY(0) scale(1);opacity:0.7}50%{opacity:1}100%{transform:translateY(-120px) scale(0.4);opacity:0}}
   @keyframes wCrossGlow{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:0.8;transform:scale(1.06)}}
@@ -779,12 +780,18 @@
   .welcome-box h1{
     font-family:'Poppins',sans-serif;
     font-weight:800;
-    font-size:26px;
+    font-size:22px;
+    line-height:1.25;
     letter-spacing:-0.01em;
-    margin:0 0 8px;
+    margin:0 0 10px;
     color:var(--ink);
-    animation:wTextFadeUp 0.5s ease 0.85s both;
   }
+  .welcome-box h1 .word{
+    display:inline-block;
+    opacity:0;
+    animation:wWordReveal 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  .welcome-box h1 .word + .word{ margin-left:0.28em; }
   .welcome-greeting{
     font-family:'Poppins',sans-serif;
     font-weight:700;
@@ -800,7 +807,7 @@
     line-height:1.55;
     color:var(--sub);
     margin:0 0 28px;
-    animation:wTextFadeUp 0.5s ease 0.95s both;
+    animation:wTextFadeUp 0.5s ease 1.55s both;
   }
   .welcome-verse{
     font-size:12.5px;
@@ -809,7 +816,7 @@
     border-top:1.5px solid var(--line);
     margin-top:24px;
     padding-top:16px;
-    animation:wTextFadeUp 0.5s ease 1.2s both;
+    animation:wTextFadeUp 0.5s ease 1.9s both;
   }
   .welcome-enter{
     width:100%;
@@ -826,7 +833,7 @@
     letter-spacing:0.02em;
     transition:transform .2s, box-shadow .2s, background-position .4s;
     box-shadow:0 6px 20px rgba(20,64,185,0.45);
-    animation:wTextFadeUp 0.5s ease 1.05s both, wEnterPulse 2s ease-in-out 2s infinite;
+    animation:wTextFadeUp 0.5s ease 1.75s both, wEnterPulse 2s ease-in-out 2.7s infinite;
     position:relative;
     overflow:hidden;
   }
@@ -933,10 +940,10 @@
   }
 
   /* Input fields on lock screen */
-  #lockUsernameInput, #lockPassInput{
+  #lockNameInput, #lockInput{
     transition:border-color .2s, box-shadow .2s, transform .15s;
   }
-  #lockUsernameInput:focus, #lockPassInput:focus{
+  #lockNameInput:focus, #lockInput:focus{
     transform:scale(1.01);
   }
 
@@ -973,6 +980,36 @@
   .lock-submit:hover::after{transform:translateX(100%);}
   .lock-submit:active{transform:translateY(0) scale(0.98);}
   .lock-submit:disabled{opacity:0.55; cursor:not-allowed; transform:none;}
+  .lock-back{display:block; width:100%; text-align:center; background:none; border:none; color:#6b7a99; font-size:13px; margin-top:14px; cursor:pointer; text-decoration:underline;}
+  .lock-back:hover{color:#1440B9;}
+  .lock-role-badge{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.03em; padding:3px 10px; border-radius:20px; margin-bottom:10px;}
+  .lock-role-badge.admin{background:#e6f0ff; color:#1440B9;}
+  .lock-role-badge.view{background:#f0f0f0; color:#5a6270;}
+
+  /* ===== VIEW-ONLY role restrictions ===== */
+  body.role-view-only #dataModal input,
+  body.role-view-only #dataModal select,
+  body.role-view-only #dataModal textarea,
+  body.role-view-only #yjSubModal input,
+  body.role-view-only #yjSubModal select,
+  body.role-view-only #yjSubModal textarea{
+    pointer-events:none !important;
+    background:#f1f2f5 !important;
+    color:#5a6270 !important;
+  }
+  body.role-view-only .dm-add-row,
+  body.role-view-only .dm-row-delete,
+  body.role-view-only .yj-add-btn{
+    display:none !important;
+  }
+  body.role-view-only #backupBtn,
+  body.role-view-only #activityLogBtn,
+  body.role-view-only #setNameBtn,
+  body.role-view-only #manageLeadersBtn{
+    display:none !important;
+  }
+  .view-only-tag{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; background:#f0f0f0; color:#5a6270; padding:5px 12px; border-radius:20px;}
+  .admin-tag{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; background:#e6f0ff; color:#1440B9; padding:5px 12px; border-radius:20px;}
 
   /* ====== Main Dashboard Animations ====== */
   /* JS adds .dash-revealed to body after unlock — animations only run then */
@@ -1164,7 +1201,7 @@
       </svg>
     </div>
     <p class="welcome-greeting" id="welcomeGreeting">Welcome</p>
-    <h1>TRCF Admin Hub</h1>
+    <h1>THE REDEEMED CHRISTIAN FELLOWSHIP</h1>
     <p class="welcome-sub">All cell reports &amp; church databases, together in one place. Sign in below to view and manage your systems.</p>
     <button class="welcome-enter" onclick="enterFromWelcome()">Continue to Sign In →</button>
     <p class="welcome-verse">"Let all things be done decently and in order." — 1 Corinthians 14:40</p>
@@ -1174,13 +1211,14 @@
 <div class="lock-overlay hidden" id="lockOverlay">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
-    <h2 id="lockTitle">Enter Access Password</h2>
-    <p class="lock-sub" id="lockSubtitle">This dashboard is protected. Enter the password to continue.</p>
-    <input type="text" id="lockUsernameInput" class="pass-input" placeholder="Username" autocomplete="off">
-    <input type="password" id="lockInput" class="pass-input" placeholder="Password" autocomplete="off">
+    <h2 id="lockTitle">Sign In</h2>
+    <p class="lock-sub" id="lockSubtitle">Type your name to continue.</p>
+    <input type="text" id="lockNameInput" class="pass-input" placeholder="Your full name" autocomplete="off">
+    <input type="password" id="lockInput" class="pass-input hidden" placeholder="Password" autocomplete="off">
     <input type="password" id="lockConfirmInput" class="pass-input hidden" placeholder="Confirm password" autocomplete="off">
     <div class="form-error" id="lockError"></div>
-    <button class="lock-submit" id="lockSubmitBtn" onclick="submitLock()">Unlock</button>
+    <button class="lock-submit" id="lockSubmitBtn" onclick="submitLock()">Continue</button>
+    <button class="lock-back hidden" id="lockBackBtn" onclick="backToNameStep()">← Not you? Use a different name</button>
   </div>
 </div>
 
@@ -1210,10 +1248,12 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C2740" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input id="searchBox" type="text" placeholder="Search a system or leader name..." oninput="filterTiles()">
     </div>
-    <button class="tool-btn" onclick="exportBackup()" title="Download a CSV backup of all editable data">⬇ Backup</button>
-    <button class="tool-btn" onclick="openLogModal()" title="See who added, edited, or deleted entries">🗂 Activity Log</button>
-    <button class="tool-btn" id="adminBadge" onclick="openNameModal()" title="Set the name shown in the activity log">👤 Set name</button>
-    <button class="tool-btn" onclick="changePassword()" title="Change the shared admin username/password">🔑 Change Password</button>
+    <span id="currentUserTag" class="admin-tag hidden"></span>
+    <button class="tool-btn hidden" id="logoutBtn" onclick="logoutUser()" title="Sign out">🚪 Logout</button>
+    <button class="tool-btn" id="backupBtn" onclick="exportBackup()" title="Download a CSV backup of all editable data">⬇ Backup</button>
+    <button class="tool-btn" id="activityLogBtn" onclick="openLogModal()" title="See who added, edited, or deleted entries">🗂 Activity Log</button>
+    <button class="tool-btn" id="manageLeadersBtn" onclick="openManageLeadersModal()" title="Add, edit, or remove network leaders and their roles">👥 Manage Leaders</button>
+    <button class="tool-btn" id="changePasswordBtn" onclick="changePassword()" title="Change your own password">🔑 Change Password</button>
     <button class="tool-btn hidden" id="installBtn" onclick="installApp()" title="Install this hub as an app on your device">📲 Install App</button>
   </div>
 
@@ -1409,6 +1449,29 @@
   </div>
 </div>
 
+<!-- Manage Leaders (ADMIN only) -->
+<div class="modal-overlay hidden" id="manageLeadersModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><span class="dot"></span><span>Manage Network Leaders</span></div>
+      <div class="modal-actions">
+        <button class="modal-close" onclick="closeManageLeadersModal()">✕</button>
+      </div>
+    </div>
+    <div class="dm-content">
+      <div id="manageLeadersBody"></div>
+      <div style="display:flex; gap:10px; margin-top:16px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="mlNewName" class="pass-input" style="max-width:240px; margin:0;" placeholder="New leader's name">
+        <select id="mlNewRole" class="pass-input" style="max-width:200px; margin:0;">
+          <option value="VIEW">VIEW ONLY</option>
+          <option value="ADMIN">ADMIN (full access)</option>
+        </select>
+        <button class="dm-add-row" style="width:auto;" onclick="mlAddLeader()">+ Add Leader</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.getElementById('lastUpdated').textContent = 'Page built ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
@@ -1459,12 +1522,17 @@
     }
   };
 
-  // ============ Access Lock (shared admin username/password, stored in the database) ============
-  // Credentials now live in the database behind /api/storage, so changing
-  // the password is just a button click — no code edits, no GitHub, no
-  // redeploying. The password is hashed (SHA-256) before it's ever saved.
-  const CREDENTIALS_KEY = 'admin-credentials';
-  let credentialsRecord = null; // { username, passwordHash }
+  // ============ Access Lock — per-person name + role + own password ============
+  // Network Leaders are stored as a single JSON array under one key in the
+  // shared database. Each entry: { name, role: 'ADMIN'|'VIEW', passwordHash }.
+  // Flow: type your name -> if it's a recognized leader, you either set a
+  // password (first time) or enter your existing one. Your role then
+  // determines whether you get full access or read-only access.
+  const USERS_KEY = 'trcf-users';
+  let usersList = [];      // the full roster, kept in memory once loaded
+  let pendingUser = null;  // the user matched by name, before password step
+  let currentUser = null;  // { name, role } once logged in
+  let lockStep = 'name';   // 'name' | 'password'
 
   async function sha256(text){
     const enc = new TextEncoder().encode(text);
@@ -1472,13 +1540,27 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
   }
 
-  async function fetchCredentials(){
+  async function fetchUsers(){
     try {
-      const res = await storage.get(CREDENTIALS_KEY);
-      return res && res.value ? JSON.parse(res.value) : null;
+      const res = await storage.get(USERS_KEY);
+      return res && res.value ? JSON.parse(res.value) : [];
     } catch(e){
-      return null;
+      return [];
     }
+  }
+
+  async function saveUsers(list){
+    usersList = list;
+    await storage.set(USERS_KEY, JSON.stringify(list));
+  }
+
+  function findUserByName(name){
+    const norm = name.trim().toLowerCase();
+    return usersList.find(u => u.name.trim().toLowerCase() === norm) || null;
+  }
+
+  function isAdminRole(){
+    return !!(currentUser && currentUser.role === 'ADMIN');
   }
 
   async function initLock(){
@@ -1489,47 +1571,101 @@
     errorEl.textContent = '';
 
     try {
-      credentialsRecord = await fetchCredentials();
+      usersList = await fetchUsers();
     } catch(e){
       errorEl.textContent = 'Could not reach the database. Check that storage is set up, then reload.';
-      submitBtn.textContent = 'Unlock';
+      submitBtn.textContent = 'Continue';
       submitBtn.disabled = false;
       return;
     }
 
-    const confirmInput = document.getElementById('lockConfirmInput');
-    const title = document.getElementById('lockTitle');
-    const subtitle = document.getElementById('lockSubtitle');
-
-    if(!credentialsRecord){
-      title.textContent = 'Create Admin Access';
-      subtitle.textContent = 'No admin login exists yet. Choose a shared username and password — this will be needed by anyone opening this hub from now on.';
-      confirmInput.classList.remove('hidden');
-      submitBtn.textContent = 'Create & Unlock';
-    } else {
-      title.textContent = 'Enter Access Password';
-      subtitle.textContent = 'This dashboard is protected. Enter the admin username and password to continue.';
-      confirmInput.classList.add('hidden');
-      submitBtn.textContent = 'Unlock';
-    }
+    resetToNameStep();
     submitBtn.disabled = false;
+
+    // Bootstrap: if there are no users at all yet, the very first person to
+    // arrive sets themselves up as ADMIN so the hub isn't unusable.
+    if(usersList.length === 0){
+      document.getElementById('lockSubtitle').textContent = 'No leaders have been added yet. Type your name to create the first ADMIN account.';
+    }
+  }
+
+  function resetToNameStep(){
+    lockStep = 'name';
+    pendingUser = null;
+    document.getElementById('lockTitle').textContent = 'Sign In';
+    document.getElementById('lockSubtitle').textContent = 'Type your name to continue.';
+    document.getElementById('lockNameInput').classList.remove('hidden');
+    document.getElementById('lockInput').classList.add('hidden');
+    document.getElementById('lockConfirmInput').classList.add('hidden');
+    document.getElementById('lockBackBtn').classList.add('hidden');
+    document.getElementById('lockInput').value = '';
+    document.getElementById('lockConfirmInput').value = '';
+    document.getElementById('lockSubmitBtn').textContent = 'Continue';
+    document.getElementById('lockError').textContent = '';
+    setTimeout(()=>document.getElementById('lockNameInput').focus(), 50);
+  }
+
+  function backToNameStep(){
+    resetToNameStep();
+  }
+
+  function goToPasswordStep(){
+    lockStep = 'password';
+    const isNewUser = !pendingUser.passwordHash;
+    document.getElementById('lockNameInput').classList.add('hidden');
+    document.getElementById('lockInput').classList.remove('hidden');
+    document.getElementById('lockBackBtn').classList.remove('hidden');
+    document.getElementById('lockError').textContent = '';
+    if(isNewUser){
+      document.getElementById('lockTitle').textContent = 'Create Your Password';
+      document.getElementById('lockSubtitle').textContent = 'Welcome, ' + pendingUser.name + '. This is your first time signing in — choose a password (min 6 characters).';
+      document.getElementById('lockConfirmInput').classList.remove('hidden');
+      document.getElementById('lockSubmitBtn').textContent = 'Create & Sign In';
+    } else {
+      document.getElementById('lockTitle').textContent = 'Welcome back, ' + pendingUser.name;
+      document.getElementById('lockSubtitle').textContent = 'Enter your password to continue.';
+      document.getElementById('lockConfirmInput').classList.add('hidden');
+      document.getElementById('lockSubmitBtn').textContent = 'Sign In';
+    }
+    setTimeout(()=>document.getElementById('lockInput').focus(), 50);
   }
 
   async function submitLock(){
     const errorEl = document.getElementById('lockError');
     const submitBtn = document.getElementById('lockSubmitBtn');
     errorEl.textContent = '';
-    const username = document.getElementById('lockUsernameInput').value.trim();
-    const password = document.getElementById('lockInput').value;
 
-    if(!username || !password){
-      errorEl.textContent = 'Please fill in all fields.';
+    // ---- Step 1: name ----
+    if(lockStep === 'name'){
+      const name = document.getElementById('lockNameInput').value.trim();
+      if(!name){
+        errorEl.textContent = 'Please type your name.';
+        return;
+      }
+      const match = findUserByName(name);
+      if(match){
+        pendingUser = match;
+      } else if(usersList.length === 0){
+        // First-ever user becomes ADMIN automatically.
+        pendingUser = { name, role: 'ADMIN', passwordHash: null };
+      } else {
+        errorEl.textContent = 'Name not recognized. Please contact your admin to be added as a Network Leader.';
+        return;
+      }
+      goToPasswordStep();
       return;
     }
 
+    // ---- Step 2: password ----
+    const password = document.getElementById('lockInput').value;
+    if(!password){
+      errorEl.textContent = 'Please enter a password.';
+      return;
+    }
     submitBtn.disabled = true;
 
-    if(!credentialsRecord){
+    const isNewUser = !pendingUser.passwordHash;
+    if(isNewUser){
       const confirmPass = document.getElementById('lockConfirmInput').value;
       if(password !== confirmPass){
         errorEl.textContent = 'Passwords do not match.';
@@ -1543,12 +1679,15 @@
       }
       try {
         const hash = await sha256(password);
-        const record = { username, passwordHash: hash };
-        await storage.set(CREDENTIALS_KEY, JSON.stringify(record));
-        credentialsRecord = record;
+        const record = { name: pendingUser.name, role: pendingUser.role, passwordHash: hash };
+        const existingIdx = usersList.findIndex(u => u.name.trim().toLowerCase() === pendingUser.name.trim().toLowerCase());
+        const updated = usersList.slice();
+        if(existingIdx === -1) updated.push(record); else updated[existingIdx] = record;
+        await saveUsers(updated);
+        currentUser = { name: record.name, role: record.role };
         unlockApp();
       } catch(e){
-        errorEl.textContent = 'Could not save credentials. Please try again.';
+        errorEl.textContent = 'Could not save your password. Please try again.';
         submitBtn.disabled = false;
       }
       return;
@@ -1556,10 +1695,11 @@
 
     try {
       const hash = await sha256(password);
-      if(username === credentialsRecord.username && hash === credentialsRecord.passwordHash){
+      if(hash === pendingUser.passwordHash){
+        currentUser = { name: pendingUser.name, role: pendingUser.role };
         unlockApp();
       } else {
-        errorEl.textContent = 'Incorrect username or password.';
+        errorEl.textContent = 'Incorrect password.';
         submitBtn.disabled = false;
         const box = document.querySelector('.lock-box');
         box.classList.remove('shake');
@@ -1573,7 +1713,32 @@
     }
   }
 
+  function applyRoleUI(){
+    document.body.classList.toggle('role-view-only', !isAdminRole());
+    const tag = document.getElementById('currentUserTag');
+    tag.classList.remove('hidden');
+    tag.className = isAdminRole() ? 'admin-tag' : 'view-only-tag';
+    tag.textContent = (isAdminRole() ? '🛠️ ADMIN — ' : '👁️ VIEW ONLY — ') + currentUser.name;
+    document.getElementById('logoutBtn').classList.remove('hidden');
+  }
+
+  function logoutUser(){
+    if(!confirm('Sign out of the hub?')) return;
+    currentUser = null;
+    pendingUser = null;
+    document.body.classList.remove('dash-revealed', 'role-view-only');
+    document.getElementById('currentUserTag').classList.add('hidden');
+    document.getElementById('logoutBtn').classList.add('hidden');
+    const overlay = document.getElementById('lockOverlay');
+    overlay.classList.remove('hidden');
+    overlay.style.opacity = '';
+    overlay.style.transform = '';
+    overlay.style.pointerEvents = '';
+    resetToNameStep();
+  }
+
   function unlockApp(){
+    applyRoleUI();
     const overlay = document.getElementById('lockOverlay');
     overlay.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
     overlay.style.opacity = '0';
@@ -1591,6 +1756,18 @@
   }
 
   // ============ Welcome screen (shown first, before the login/access lock) ============
+  (function revealTitleWordByWord(){
+    const h1 = document.querySelector('.welcome-box h1');
+    if(!h1) return;
+    const text = h1.textContent.trim();
+    const words = text.split(/\s+/);
+    const baseDelay = 0.85;   // seconds — matches where the old single fade-in started
+    const stepDelay = 0.16;   // gap between each word appearing
+    h1.innerHTML = words.map((w, i) =>
+      `<span class="word" style="animation-delay:${(baseDelay + i * stepDelay).toFixed(2)}s">${w}</span>`
+    ).join(' ');
+  })();
+
   (function setWelcomeGreeting(){
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -1627,29 +1804,26 @@
       overlay.classList.add('hidden');
       overlay.style.transform = '';
       document.getElementById('lockOverlay').classList.remove('hidden');
-      const first = document.getElementById('lockUsernameInput');
+      const first = document.getElementById('lockNameInput');
       if(first) first.focus();
     }, 450);
   }
 
-  // Change the shared admin username/password right from the toolbar —
-  // saves straight to the database, no code editing needed.
+  // Change YOUR OWN password (available to whoever is currently signed in).
   async function changePassword(){
-    if(!credentialsRecord){
-      credentialsRecord = await fetchCredentials();
-    }
-    if(!credentialsRecord){
-      alert('No admin login has been created yet.');
+    if(!currentUser) return;
+    const me = usersList.find(u => u.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase());
+    if(!me){
+      alert('Could not find your account. Please reload and sign in again.');
       return;
     }
-    const currentPass = prompt('Enter the CURRENT admin password to confirm:');
+    const currentPass = prompt('Enter your CURRENT password to confirm:');
     if(currentPass === null) return;
     const currentHash = await sha256(currentPass);
-    if(currentHash !== credentialsRecord.passwordHash){
+    if(currentHash !== me.passwordHash){
       alert('Current password is incorrect. Nothing changed.');
       return;
     }
-    const newUsername = (prompt('New username (leave blank to keep "' + credentialsRecord.username + '"):') || '').trim() || credentialsRecord.username;
     const newPass = prompt('New password (min 6 characters):');
     if(newPass === null) return;
     if(newPass.length < 6){
@@ -1663,16 +1837,101 @@
     }
     try {
       const newHash = await sha256(newPass);
-      const record = { username: newUsername, passwordHash: newHash };
-      await storage.set(CREDENTIALS_KEY, JSON.stringify(record));
-      credentialsRecord = record;
-      alert('Admin password updated. This takes effect immediately for everyone.');
+      const updated = usersList.map(u => u.name.trim().toLowerCase() === me.name.trim().toLowerCase() ? { ...u, passwordHash: newHash } : u);
+      await saveUsers(updated);
+      alert('Your password has been updated.');
     } catch(e){
       alert('Could not save the new password. Please check your connection and try again.');
     }
   }
 
-  ['lockUsernameInput','lockInput','lockConfirmInput'].forEach(id => {
+  // ============ Manage Leaders (ADMIN only) ============
+  function openManageLeadersModal(){
+    if(!isAdminRole()){ return; }
+    renderManageLeadersModal();
+    document.getElementById('manageLeadersModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeManageLeadersModal(){
+    document.getElementById('manageLeadersModal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function mlEsc(str){ return escapeAttr(str); }
+
+  function renderManageLeadersModal(){
+    const body = document.getElementById('manageLeadersBody');
+    if(usersList.length === 0){
+      body.innerHTML = '<p class="dm-empty">No leaders added yet. Use the form below to add the first one.</p>';
+      return;
+    }
+    const rows = usersList.map((u, idx) => `
+      <tr>
+        <td>${mlEsc(u.name)}</td>
+        <td>
+          <select onchange="mlChangeRole(${idx}, this.value)">
+            <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN (full access)</option>
+            <option value="VIEW" ${u.role === 'VIEW' ? 'selected' : ''}>VIEW ONLY</option>
+          </select>
+        </td>
+        <td>${u.passwordHash ? 'Password set' : '<em>Not set yet</em>'}</td>
+        <td>
+          ${u.passwordHash ? `<button class="tool-btn" onclick="mlResetPassword(${idx})">Reset Password</button>` : ''}
+          <button class="dm-row-delete" onclick="mlDeleteUser(${idx})" title="Remove leader">✕</button>
+        </td>
+      </tr>`).join('');
+    body.innerHTML = `
+      <table class="dm-table">
+        <thead><tr><th>Name</th><th>Role</th><th>Password</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  async function mlChangeRole(idx, role){
+    if(!isAdminRole()) return;
+    const updated = usersList.slice();
+    updated[idx] = { ...updated[idx], role };
+    await saveUsers(updated);
+    if(currentUser && currentUser.name.trim().toLowerCase() === updated[idx].name.trim().toLowerCase()){
+      currentUser.role = role;
+      applyRoleUI();
+    }
+    renderManageLeadersModal();
+  }
+
+  async function mlResetPassword(idx){
+    if(!isAdminRole()) return;
+    if(!confirm('Reset the password for "' + usersList[idx].name + '"? They will be asked to create a new one next time they sign in.')) return;
+    const updated = usersList.slice();
+    updated[idx] = { ...updated[idx], passwordHash: null };
+    await saveUsers(updated);
+    renderManageLeadersModal();
+  }
+
+  async function mlDeleteUser(idx){
+    if(!isAdminRole()) return;
+    if(!confirm('Remove "' + usersList[idx].name + '" from the system?')) return;
+    const updated = usersList.slice();
+    updated.splice(idx, 1);
+    await saveUsers(updated);
+    renderManageLeadersModal();
+  }
+
+  async function mlAddLeader(){
+    if(!isAdminRole()) return;
+    const nameInput = document.getElementById('mlNewName');
+    const roleInput = document.getElementById('mlNewRole');
+    const name = nameInput.value.trim();
+    if(!name){ alert('Please enter a name.'); return; }
+    if(findUserByName(name)){ alert('That name already exists.'); return; }
+    const updated = usersList.concat([{ name, role: roleInput.value, passwordHash: null }]);
+    await saveUsers(updated);
+    nameInput.value = '';
+    renderManageLeadersModal();
+  }
+
+  ['lockNameInput','lockInput','lockConfirmInput'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => { if(e.key === 'Enter') submitLock(); });
   });
 
@@ -1854,25 +2113,10 @@
     }
   };
 
-  // ============ Admin name (kept per-device, tags what you do in the log) ============
+  // ============ Current user name (comes from login, tags what you do in the log) ============
   function getAdminName(){
-    return localStorage.getItem('trcf-admin-name') || '';
+    return (currentUser && currentUser.name) || 'Unknown';
   }
-  function setAdminNameLocal(name){
-    localStorage.setItem('trcf-admin-name', name);
-  }
-  function updateAdminBadge(){
-    const name = getAdminName();
-    document.getElementById('adminBadge').textContent = name ? ('👤 ' + name) : '👤 Set name';
-  }
-  function openNameModal(){
-    const current = getAdminName();
-    const name = prompt('Enter the name that should appear in the Activity Log when you make changes:', current);
-    if(name === null) return;
-    setAdminNameLocal(name.trim());
-    updateAdminBadge();
-  }
-  updateAdminBadge();
 
   // ============ Activity log (shared) ============
   const LOG_KEY = 'activity-log';
@@ -1943,6 +2187,7 @@
   }
 
   async function clearLog(){
+    if(!isAdminRole()) return;
     if(!confirm('Clear the entire activity log? This cannot be undone.')) return;
     try {
       await storage.set(LOG_KEY, JSON.stringify([]));
@@ -1954,6 +2199,7 @@
 
   // ============ CSV backup of every module's data ============
   async function exportBackup(){
+    if(!isAdminRole()) return;
     try {
       let csv = '';
       for (const key of Object.keys(MODULES)){
@@ -2155,6 +2401,7 @@
   }
 
   function updateCell(idx, key, value, isNumber){
+    if(!isAdminRole()) return;
     currentRows[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleSave();
     updateTotalsRow();
@@ -2176,6 +2423,7 @@
   }
 
   function addRow(){
+    if(!isAdminRole()) return;
     const cfg = MODULES[currentModuleKey];
     const newRow = { [cfg.labelField.key]: '' };
     cfg.columns.forEach(c => newRow[c.key] = '');
@@ -2190,6 +2438,7 @@
   }
 
   function deleteRow(idx){
+    if(!isAdminRole()) return;
     if(!confirm('Delete this entry? This cannot be undone.')) return;
     const cfg = MODULES[currentModuleKey];
     const label = currentRows[idx][cfg.labelField.key] || '(unnamed)';
@@ -2777,11 +3026,13 @@
 
   // ---- Roster (List of YJM) ----
   function yjUpdateRoster(idx, key, value){
+    if(!isAdminRole()) return;
     yjData.roster[idx][key] = value;
     scheduleYJSave();
     scheduleLog('edit', 'Updated a YJM roster entry');
   }
   function yjAddRoster(){
+    if(!isAdminRole()) return;
     yjData.roster.push({ name:'', leader:'', memberId:'' });
     scheduleYJSave();
     renderYJDashboard();
@@ -2790,6 +3041,7 @@
     setTimeout(() => { const i = document.querySelectorAll('#yjRosterBody input'); if(i.length) i[i.length-2].focus(); }, 0);
   }
   function yjDeleteRoster(idx){
+    if(!isAdminRole()) return;
     if(!confirm('Remove this member from the roster?')) return;
     yjData.roster.splice(idx,1);
     scheduleYJSave();
@@ -2830,6 +3082,7 @@
   // member you've since edited or removed here \u2014 the app stays the source
   // of truth for who's active once you've touched an entry manually.
   async function yjImportRosterFromSheet(){
+    if(!isAdminRole()) return;
     const btn = document.getElementById('yjSubImportBtn');
     const status = document.getElementById('yjSubImportStatus');
     if(btn) btn.disabled = true;
@@ -2893,11 +3146,13 @@
 
   // ---- Youth Jam Leaders ----
   function yjUpdateLeader(idx, key, value){
+    if(!isAdminRole()) return;
     yjData.leaders[idx][key] = value;
     scheduleYJSave();
     scheduleLog('edit', 'Updated a Youth Jam leader entry');
   }
   function yjAddLeader(){
+    if(!isAdminRole()) return;
     yjData.leaders.push({ name:'' });
     scheduleYJSave();
     renderYJDashboard();
@@ -2906,6 +3161,7 @@
     setTimeout(() => { const i = document.querySelectorAll('#yjLeadersBody input'); if(i.length) i[i.length-1].focus(); }, 0);
   }
   function yjDeleteLeader(idx){
+    if(!isAdminRole()) return;
     if(!confirm('Remove this leader?')) return;
     yjData.leaders.splice(idx,1);
     scheduleYJSave();
@@ -2932,6 +3188,7 @@
   // insensitively), never removes or renames an existing entry, and also
   // cleans up any duplicates already sitting in the list.
   async function yjImportLeadersFromAttendance(){
+    if(!isAdminRole()) return;
     const btn = document.getElementById('yjSubImportBtn');
     const status = document.getElementById('yjSubImportStatus');
     if(btn) btn.disabled = true;
@@ -3082,12 +3339,14 @@
     const sub = document.getElementById('yjVipSubtotal'); if(sub) sub.textContent = 'Total logged: ' + stats.allTimeVip;
   }
   function yjUpdateVip(idx, key, value, isNumber){
+    if(!isAdminRole()) return;
     yjData.vipLog[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleYJSave();
     yjPatchVipStats();
     scheduleLog('edit', 'Updated a VIP log entry');
   }
   function yjAddVip(){
+    if(!isAdminRole()) return;
     yjData.vipLog.push({ date:'', count:'' });
     scheduleYJSave();
     renderYJDashboard();
@@ -3095,6 +3354,7 @@
     logActivity('add', 'Youth Jam Dashboard', 'Added a VIP log entry');
   }
   function yjDeleteVip(idx){
+    if(!isAdminRole()) return;
     if(!confirm('Delete this VIP log entry?')) return;
     yjData.vipLog.splice(idx,1);
     scheduleYJSave();
@@ -3115,6 +3375,7 @@
     if(tds[2]) tds[2].textContent = fTotal;
   }
   function yjUpdateWeek(idx, key, value, isNumber){
+    if(!isAdminRole()) return;
     yjData.weekly[idx][key] = isNumber ? (value === '' ? '' : Number(value)) : value;
     scheduleYJSave();
     // If the month just changed pulls this row outside the current
@@ -3132,6 +3393,7 @@
     scheduleLog('edit', 'Updated a weekly attendance entry');
   }
   function yjAddWeek(){
+    if(!isAdminRole()) return;
     yjEnsureStatsMonth();
     const presetMonth = (yjStatsMonth === 'all') ? '' : yjStatsMonth;
     const presetYear = (yjStatsYear === 'all') ? '' : yjStatsYear;
@@ -3145,6 +3407,7 @@
     setTimeout(() => { const s = document.querySelectorAll('#yjWeekBody select'); if(s.length) s[s.length-1].focus(); }, 0);
   }
   function yjDeleteWeek(idx){
+    if(!isAdminRole()) return;
     if(!confirm('Delete this week? This cannot be undone.')) return;
     yjData.weekly.splice(idx,1);
     scheduleYJSave();
