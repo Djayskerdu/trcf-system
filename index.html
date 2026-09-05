@@ -741,6 +741,8 @@
   .yj-panel-chevron.open{transform:rotate(90deg); color:var(--ink);}
   .yj-tap-hint{cursor:pointer; text-decoration:underline; text-underline-offset:2px;}
   .yj-tap-hint:hover{color:var(--ink);}
+  .yj-sub-overlay{z-index:1100;}
+  .yj-sub-box{max-width:640px; height:auto; max-height:80vh;}
   .yj-panel-count{background:var(--green); color:#fff; font-size:11px; font-weight:800; border-radius:999px; padding:2px 9px; min-width:20px; text-align:center;}
   .yj-panel-sub{font-size:11px; color:var(--sub); margin:2px 0 10px;}
   .yj-mini-table{width:100%; border-collapse:collapse; font-size:12.5px;}
@@ -1037,6 +1039,19 @@
   </div>
 </div>
 
+<!-- Youth Jam sub-list popup (roster / leaders / VIP log) -->
+<div class="modal-overlay hidden yj-sub-overlay" id="yjSubModal">
+  <div class="modal-box yj-sub-box">
+    <div class="modal-header">
+      <div class="modal-title"><span class="dot"></span><span id="yjSubModalTitle">List</span></div>
+      <div class="modal-actions">
+        <button class="modal-close" onclick="yjCloseSubModal()">✕</button>
+      </div>
+    </div>
+    <div class="dm-content" id="yjSubModalContent"></div>
+  </div>
+</div>
+
 <script>
   document.getElementById('lastUpdated').textContent = 'Page built ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
@@ -1311,8 +1326,14 @@
   document.getElementById('dataModal').addEventListener('click', function(e){
     if(e.target === this) closeDataModal();
   });
+  document.getElementById('yjSubModal').addEventListener('click', function(e){
+    if(e.target === this) yjCloseSubModal();
+  });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closeApp(); closeDataModal(); }
+    if(e.key === 'Escape'){
+      if(!document.getElementById('yjSubModal').classList.contains('hidden')){ yjCloseSubModal(); return; }
+      closeApp(); closeDataModal();
+    }
   });
 
   const TOTAL_SYSTEMS = 16; // master + 9 leaders + 6 other systems
@@ -1586,6 +1607,8 @@
 
   function closeDataModal(){
     document.getElementById('dataModal').classList.add('hidden');
+    document.getElementById('yjSubModal').classList.add('hidden');
+    yjSubModalKey = null;
     document.body.style.overflow = '';
     currentModuleKey = null;
     if(currentChart){ currentChart.destroy(); currentChart = null; }
@@ -1766,7 +1789,7 @@
   const YJ_KEY = 'module:youthJam';
   const YJ_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   let yjData = null;
-  let yjPanelOpen = { roster:false, leaders:false, vip:false };
+  let yjSubModalKey = null;
   let yjSaveTimer = null;
   let yjSelectedYear = null;
 
@@ -1872,41 +1895,87 @@
 
     yjData = await loadYJData();
     yjSelectedYear = null;
-    yjPanelOpen = { roster:false, leaders:false, vip:false };
+    yjSubModalKey = null;
+    document.getElementById('yjSubModal').classList.add('hidden');
     renderYJDashboard();
   }
 
   function yjEsc(str){ return escapeAttr(str); }
 
-  function yjTogglePanel(key){
-    yjPanelOpen[key] = !yjPanelOpen[key];
-    renderYJDashboard();
+  const YJ_SUB_CONFIG = {
+    roster: {
+      title: 'List of YJM',
+      addLabel: '+ Add Member',
+      addFn: 'yjAddRoster',
+      bodyId: 'yjRosterBody',
+      emptyText: 'No members yet.',
+      head: '<tr><th>Name</th><th>Net. Leader</th><th></th></tr>',
+      rows: () => yjData.roster.map((r, idx) => `
+        <tr>
+          <td><input type="text" value="${yjEsc(r.name||'')}" placeholder="Name" oninput="yjUpdateRoster(${idx},'name',this.value)"></td>
+          <td><input type="text" value="${yjEsc(r.leader||'')}" placeholder="Network leader" oninput="yjUpdateRoster(${idx},'leader',this.value)"></td>
+          <td><button class="dm-row-delete" onclick="yjDeleteRoster(${idx})" title="Delete">✕</button></td>
+        </tr>`).join('')
+    },
+    leaders: {
+      title: 'Youth Jam Leaders',
+      addLabel: '+ Add Leader',
+      addFn: 'yjAddLeader',
+      bodyId: 'yjLeadersBody',
+      emptyText: 'No leaders yet.',
+      head: '<tr><th>Name</th><th></th></tr>',
+      rows: () => yjData.leaders.map((l, idx) => `
+        <tr>
+          <td><input type="text" value="${yjEsc(l.name||'')}" placeholder="Name" oninput="yjUpdateLeader(${idx},'name',this.value)"></td>
+          <td><button class="dm-row-delete" onclick="yjDeleteLeader(${idx})" title="Delete">✕</button></td>
+        </tr>`).join('')
+    },
+    vip: {
+      title: 'VIP Log',
+      addLabel: '+ Add Date',
+      addFn: 'yjAddVip',
+      bodyId: 'yjVipBody',
+      emptyText: 'No dates logged yet.',
+      head: '<tr><th>Date</th><th>VIP\'s</th><th></th></tr>',
+      rows: () => yjData.vipLog.map((v, idx) => `
+        <tr>
+          <td><input type="date" value="${yjEsc(v.date||'')}" oninput="yjUpdateVip(${idx},'date',this.value,false)"></td>
+          <td><input type="number" value="${v.count ?? ''}" placeholder="0" oninput="yjUpdateVip(${idx},'count',this.value,true)"></td>
+          <td><button class="dm-row-delete" onclick="yjDeleteVip(${idx})" title="Delete">✕</button></td>
+        </tr>`).join('')
+    }
+  };
+
+  function yjOpenSubModal(key){
+    yjSubModalKey = key;
+    document.getElementById('yjSubModal').classList.remove('hidden');
+    yjRenderSubModalContent();
+  }
+
+  function yjCloseSubModal(){
+    document.getElementById('yjSubModal').classList.add('hidden');
+    yjSubModalKey = null;
+  }
+
+  function yjRenderSubModalContent(){
+    if(!yjSubModalKey) return;
+    const cfg = YJ_SUB_CONFIG[yjSubModalKey];
+    document.getElementById('yjSubModalTitle').textContent = cfg.title;
+    const rows = cfg.rows();
+    document.getElementById('yjSubModalContent').innerHTML = `
+      ${rows ? `
+      <table class="yj-mini-table">
+        <thead>${cfg.head}</thead>
+        <tbody id="${cfg.bodyId}">${rows}</tbody>
+      </table>` : `<div class="yj-empty-mini">${cfg.emptyText}</div>`}
+      <button class="yj-add-btn" onclick="${cfg.addFn}()">${cfg.addLabel}</button>
+    `;
   }
 
   function renderYJDashboard(){
     if(currentChart){ currentChart.destroy(); currentChart = null; }
     const stats = yjComputeStats();
     const content = document.getElementById('dmContent');
-
-    const rosterRows = yjData.roster.map((r, idx) => `
-      <tr>
-        <td><input type="text" value="${yjEsc(r.name||'')}" placeholder="Name" oninput="yjUpdateRoster(${idx},'name',this.value)"></td>
-        <td><input type="text" value="${yjEsc(r.leader||'')}" placeholder="Network leader" oninput="yjUpdateRoster(${idx},'leader',this.value)"></td>
-        <td><button class="dm-row-delete" onclick="yjDeleteRoster(${idx})" title="Delete">✕</button></td>
-      </tr>`).join('');
-
-    const leaderRows = yjData.leaders.map((l, idx) => `
-      <tr>
-        <td><input type="text" value="${yjEsc(l.name||'')}" placeholder="Name" oninput="yjUpdateLeader(${idx},'name',this.value)"></td>
-        <td><button class="dm-row-delete" onclick="yjDeleteLeader(${idx})" title="Delete">✕</button></td>
-      </tr>`).join('');
-
-    const vipRows = yjData.vipLog.map((v, idx) => `
-      <tr>
-        <td><input type="date" value="${yjEsc(v.date||'')}" oninput="yjUpdateVip(${idx},'date',this.value,false)"></td>
-        <td><input type="number" value="${v.count ?? ''}" placeholder="0" oninput="yjUpdateVip(${idx},'count',this.value,true)"></td>
-        <td><button class="dm-row-delete" onclick="yjDeleteVip(${idx})" title="Delete">✕</button></td>
-      </tr>`).join('');
 
     const weekRows = yjData.weekly.map((w, idx) => `
       <tr>
@@ -1943,45 +2012,30 @@
 
       <div class="yj-flow-grid">
         <div class="yj-panel">
-          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('roster')">
-            <span class="yj-panel-chevron ${yjPanelOpen.roster?'open':''}">▸</span>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjOpenSubModal('roster')">
+            <span class="yj-panel-chevron">▸</span>
             List of YJM <span class="yj-panel-count" id="yjCountRoster">${yjData.roster.length}</span>
           </div>
           <div class="yj-panel-sub">Name &amp; network leader</div>
-          ${yjPanelOpen.roster ? (yjData.roster.length ? `
-          <table class="yj-mini-table">
-            <thead><tr><th>Name</th><th>Net. Leader</th><th></th></tr></thead>
-            <tbody id="yjRosterBody">${rosterRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No members yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('roster')">Tap to view list</div>`}
-          ${yjPanelOpen.roster ? `<button class="yj-add-btn" onclick="yjAddRoster()">+ Add Member</button>` : ''}
+          <div class="yj-empty-mini yj-tap-hint" onclick="yjOpenSubModal('roster')">Tap to view list</div>
         </div>
 
         <div class="yj-panel">
-          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('leaders')">
-            <span class="yj-panel-chevron ${yjPanelOpen.leaders?'open':''}">▸</span>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjOpenSubModal('leaders')">
+            <span class="yj-panel-chevron">▸</span>
             Youth Jam Leaders <span class="yj-panel-count" id="yjCountLeaders">${yjData.leaders.length}</span>
           </div>
           <div class="yj-panel-sub">Names</div>
-          ${yjPanelOpen.leaders ? (yjData.leaders.length ? `
-          <table class="yj-mini-table">
-            <thead><tr><th>Name</th><th></th></tr></thead>
-            <tbody id="yjLeadersBody">${leaderRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No leaders yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('leaders')">Tap to view list</div>`}
-          ${yjPanelOpen.leaders ? `<button class="yj-add-btn" onclick="yjAddLeader()">+ Add Leader</button>` : ''}
+          <div class="yj-empty-mini yj-tap-hint" onclick="yjOpenSubModal('leaders')">Tap to view list</div>
         </div>
 
         <div class="yj-panel">
-          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('vip')">
-            <span class="yj-panel-chevron ${yjPanelOpen.vip?'open':''}">▸</span>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjOpenSubModal('vip')">
+            <span class="yj-panel-chevron">▸</span>
             VIP Log <span class="yj-panel-count" id="yjCountVip">${stats.mtdVip}</span>
           </div>
           <div class="yj-panel-sub">VIP's per Youth Jam date</div>
-          ${yjPanelOpen.vip ? (yjData.vipLog.length ? `
-          <table class="yj-mini-table">
-            <thead><tr><th>Date</th><th>VIP's</th><th></th></tr></thead>
-            <tbody id="yjVipBody">${vipRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No dates logged yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('vip')">Tap to view list</div>`}
-          ${yjPanelOpen.vip ? `<button class="yj-add-btn" onclick="yjAddVip()">+ Add Date</button>` : ''}
+          <div class="yj-empty-mini yj-tap-hint" onclick="yjOpenSubModal('vip')">Tap to view list</div>
           <div class="yj-subtotal" id="yjVipSubtotal">Total logged: ${stats.allTimeVip}</div>
         </div>
       </div>
@@ -2078,6 +2132,7 @@
     yjData.roster.push({ name:'', leader:'' });
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('add', 'Youth Jam Dashboard', 'Added a YJM roster entry');
     setTimeout(() => { const i = document.querySelectorAll('#yjRosterBody input'); if(i.length) i[i.length-2].focus(); }, 0);
   }
@@ -2086,6 +2141,7 @@
     yjData.roster.splice(idx,1);
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('delete', 'Youth Jam Dashboard', 'Removed a YJM roster entry');
   }
 
@@ -2099,6 +2155,7 @@
     yjData.leaders.push({ name:'' });
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('add', 'Youth Jam Dashboard', 'Added a Youth Jam leader');
     setTimeout(() => { const i = document.querySelectorAll('#yjLeadersBody input'); if(i.length) i[i.length-1].focus(); }, 0);
   }
@@ -2107,6 +2164,7 @@
     yjData.leaders.splice(idx,1);
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('delete', 'Youth Jam Dashboard', 'Removed a Youth Jam leader');
   }
 
@@ -2128,6 +2186,7 @@
     yjData.vipLog.push({ date:'', count:'' });
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('add', 'Youth Jam Dashboard', 'Added a VIP log entry');
   }
   function yjDeleteVip(idx){
@@ -2135,6 +2194,7 @@
     yjData.vipLog.splice(idx,1);
     scheduleYJSave();
     renderYJDashboard();
+    yjRenderSubModalContent();
     logActivity('delete', 'Youth Jam Dashboard', 'Deleted a VIP log entry');
   }
 
