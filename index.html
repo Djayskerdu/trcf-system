@@ -1595,8 +1595,8 @@
         yj.leaders.forEach(l => { csv += `"${String(l.name||'').replace(/"/g,'""')}"\n`; });
         csv += `\n"Youth Jam Dashboard — VIP Log"\n"Date","VIP Count"\n`;
         yj.vipLog.forEach(v => { csv += `"${v.date||''}","${v.count ?? ''}"\n`; });
-        csv += `\n"Youth Jam Dashboard — Weekly Attendance"\n"Month","Year","Week / Label","Participants","First Timers"\n`;
-        yj.weekly.forEach(w => { csv += `"${w.month ? YJ_MONTH_NAMES[w.month-1] : ''}","${w.year ?? ''}","${String(w.label||'').replace(/"/g,'""')}","${w.participants ?? ''}","${w.firstTimers ?? ''}"\n`; });
+        csv += `\n"Youth Jam Dashboard — Monthly Attendance"\n"Month","Year","Participants","First Timers"\n`;
+        yj.weekly.forEach(w => { csv += `"${w.month ? YJ_MONTH_NAMES[w.month-1] : ''}","${w.year ?? ''}","${w.participants ?? ''}","${w.firstTimers ?? ''}"\n`; });
       } catch(e){}
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -1959,7 +1959,6 @@
       <tr>
         <td><select onchange="yjUpdateWeek(${idx},'month',this.value,true)"><option value="">Month</option>${monthOptions}</select></td>
         <td><input type="number" value="${w.year ?? ''}" placeholder="${new Date().getFullYear()}" min="2000" max="2100" oninput="yjUpdateWeek(${idx},'year',this.value,true)"></td>
-        <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24\u201330" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
         <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
         <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
         <td><button class="dm-row-delete" onclick="yjDeleteWeek(${idx})" title="Delete">\u2715</button></td>
@@ -1984,7 +1983,7 @@
       const arrow = active ? (yjWeekSortDir === 'asc' ? ' \u25b2' : ' \u25bc') : '';
       return `<th class="yj-sortable${active ? ' active' : ''}" onclick="yjSortWeek('${key}')" title="Sort by ${label}">${label}${arrow}</th>`;
     };
-    return `<tr>${col('month','Month')}${col('year','Year')}${col('label','Week / Date Label')}${col('participants','Participants')}${col('firstTimers','First Timers')}<th></th></tr>`;
+    return `<tr>${col('month','Month')}${col('year','Year')}${col('participants','Participants')}${col('firstTimers','First Timers')}<th></th></tr>`;
   }
 
   function yjSortWeek(key){
@@ -2157,16 +2156,16 @@
         </div>
       </div>
 
-      <div class="yj-section-title"><span class="yj-arrow">↓</span> Weekly Attendance (feeds the totals below)</div>
+      <div class="yj-section-title"><span class="yj-arrow">↓</span> Monthly Attendance (feeds the totals below)</div>
       <div class="dm-chart-wrap"><canvas id="dmChartCanvas" height="220"></canvas></div>
       <div class="yj-table-scroll">
         <table class="dm-table">
           <thead id="yjWeekHead">${yjWeekHeaderHtml()}</thead>
           <tbody id="yjWeekBody">${weekRows}</tbody>
-          <tfoot><tr class="yj-week-totals"><td colspan="3">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
+          <tfoot><tr class="yj-week-totals"><td colspan="2">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
         </table>
       </div>
-      <button class="dm-add-row" onclick="yjAddWeek()">+ Add Week / Date</button>
+      <button class="dm-add-row" onclick="yjAddWeek()">+ Add Month</button>
 
       <div class="yj-bottom-grid">
         <div class="yj-stat-card">
@@ -2187,7 +2186,7 @@
   function yjRenderChart(){
     const canvas = document.getElementById('dmChartCanvas');
     if(!canvas || typeof Chart === 'undefined') return;
-    const labels = yjData.weekly.map(r => r.label || ((r.month && r.year) ? `${YJ_MONTH_NAMES[r.month-1]} ${r.year}` : '(unnamed)'));
+    const labels = yjData.weekly.map(r => (r.month && r.year) ? `${YJ_MONTH_NAMES[r.month-1]} ${r.year}` : '(unnamed)');
     const datasets = [
       { label: 'Participants', data: yjData.weekly.map(r => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
       { label: 'First Timers', data: yjData.weekly.map(r => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
@@ -2335,20 +2334,20 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
-    scheduleLog('edit', 'Updated a weekly attendance entry');
+    scheduleLog('edit', 'Updated a monthly attendance entry');
   }
   function yjAddWeek(){
-    yjData.weekly.push({ month:'', year:'', label:'', participants:'', firstTimers:'' });
+    yjData.weekly.push({ month:'', year:'', participants:'', firstTimers:'' });
     scheduleYJSave();
     yjRenderWeekBody();
     yjUpdateWeeklyTotalsRow();
     yjRenderChart();
     yjRenderYtd();
-    logActivity('add', 'Youth Jam Dashboard', 'Added a weekly attendance entry');
+    logActivity('add', 'Youth Jam Dashboard', 'Added a monthly attendance entry');
     setTimeout(() => { const s = document.querySelectorAll('#yjWeekBody select'); if(s.length) s[s.length-1].focus(); }, 0);
   }
   function yjDeleteWeek(idx){
-    if(!confirm('Delete this week? This cannot be undone.')) return;
+    if(!confirm('Delete this month? This cannot be undone.')) return;
     yjData.weekly.splice(idx,1);
     scheduleYJSave();
     yjRenderWeekBody();
@@ -2357,7 +2356,7 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
-    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a weekly attendance entry');
+    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a monthly attendance entry');
   }
 
   // Lightweight, debounced activity-log entry for per-keystroke edits (avoids
