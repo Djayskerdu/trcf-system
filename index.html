@@ -2567,13 +2567,13 @@
   }
 
   // ---- VIP Log ----
-  // Keeps the VIP Log's dates in sync with the Weekly Attendance table
-  // automatically. A weekly row's "Week / Date Label" is expected to hold
-  // the day-of-month (e.g. "19" for June 19), so once a row has a Month,
-  // Year, and a day-like Label, we build the full date and make sure a
-  // matching VIP Log row exists for it — no manual typing needed. This
-  // only ADDS missing dates; it never edits or removes a VIP row a person
-  // already filled in (so counts already logged are always safe).
+  // Keeps the VIP Log in sync with the Weekly Attendance table's First
+  // Timers column automatically. A weekly row's "Week / Date Label" is
+  // expected to hold the day-of-month (e.g. "19" for June 19); once a row
+  // has a Month, Year, a day-like Label, AND at least 1 First Timer, we
+  // build the full date and mirror that First Timers count straight into
+  // a matching VIP Log row — no manual typing, and no "0" placeholder
+  // rows for weeks that had no first timers/VIPs.
   function yjParseDayFromLabel(label){
     if(label == null) return null;
     const m = String(label).match(/\d{1,2}/);
@@ -2583,21 +2583,58 @@
     return day;
   }
 
-  function yjSyncVipFromWeekly(){
-    const existingDates = new Set(yjData.vipLog.map(v => v.date).filter(Boolean));
-    let changed = false;
-    yjData.weekly.forEach(w => {
-      if(!w.month || !w.year) return;
+  // Every weekly row's resolved date -> that row's First Timers count,
+  // but only for rows with a complete date. Used both to upsert matches
+  // and to know which dates are "owned" by the weekly table at all.
+  function yjWeeklyDatedRows(){
+    return yjData.weekly.map(w => {
+      if(!w.month || !w.year) return null;
       const day = yjParseDayFromLabel(w.label);
-      if(day == null) return;
+      if(day == null) return null;
       const dateStr = `${w.year}-${String(w.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      if(new Date(dateStr + 'T00:00:00').getDate() !== day) return; // guards invalid dates e.g. Feb 30
-      if(!existingDates.has(dateStr)){
-        yjData.vipLog.push({ date: dateStr, count: '' });
-        existingDates.add(dateStr);
+      if(new Date(dateStr + 'T00:00:00').getDate() !== day) return null; // e.g. Feb 30
+      return { dateStr, firstTimers: Number(w.firstTimers) || 0 };
+    }).filter(Boolean);
+  }
+
+  function yjSyncVipFromWeekly(){
+    const datedRows = yjWeeklyDatedRows();
+    const weeklyDatesAll = new Set(datedRows.map(r => r.dateStr));
+    const weeklyMap = new Map();
+    datedRows.forEach(r => { if(r.firstTimers > 0) weeklyMap.set(r.dateStr, r.firstTimers); });
+
+    let changed = false;
+
+    // Add or refresh a VIP row for every weekly date that has 1+ first timers.
+    weeklyMap.forEach((ft, dateStr) => {
+      const existing = yjData.vipLog.find(v => v.date === dateStr);
+      if(existing){
+        if(existing.count !== ft){ existing.count = ft; changed = true; }
+      } else {
+        yjData.vipLog.push({ date: dateStr, count: ft });
         changed = true;
       }
     });
+
+    // Drop VIP rows that came from a weekly date whose first timers has
+    // since dropped to zero/was cleared. Rows whose date has no matching
+    // weekly row at all (typed in by hand, unrelated to the table) are
+    // never touched.
+    const beforeLen = yjData.vipLog.length;
+    yjData.vipLog = yjData.vipLog.filter(v => !(v.date && weeklyDatesAll.has(v.date) && !weeklyMap.has(v.date)));
+    if(yjData.vipLog.length !== beforeLen) changed = true;
+
+    // Collapse accidental duplicate dates (keep the first, drop the rest).
+    const seenDates = new Set();
+    const dedupedLen = yjData.vipLog.length;
+    yjData.vipLog = yjData.vipLog.filter(v => {
+      if(!v.date) return true;
+      if(seenDates.has(v.date)) return false;
+      seenDates.add(v.date);
+      return true;
+    });
+    if(yjData.vipLog.length !== dedupedLen) changed = true;
+
     if(changed) yjData.vipLog.sort((a,b) => (a.date||'').localeCompare(b.date||''));
     return changed;
   }
@@ -2659,7 +2696,7 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
-    if(key === 'month' || key === 'year' || key === 'label') yjSyncVipAndRefresh();
+    if(key === 'month' || key === 'year' || key === 'label' || key === 'firstTimers') yjSyncVipAndRefresh();
     scheduleLog('edit', 'Updated a weekly attendance entry');
   }
   function yjAddWeek(){
@@ -2682,6 +2719,7 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
+    yjSyncVipAndRefresh();
     logActivity('delete', 'Youth Jam Dashboard', 'Deleted a weekly attendance entry');
   }
 
