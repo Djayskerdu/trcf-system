@@ -474,6 +474,18 @@
     border-bottom:1px solid var(--line);
   }
   .dm-table tr:hover td{background:#F2F6FC;}
+  .yj-table-scroll{
+    max-height:360px;
+    overflow-y:auto;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .yj-table-scroll .dm-table{min-width:560px;}
+  .yj-table-scroll .dm-table thead th{position:sticky; top:0; z-index:1;}
+  .yj-table-scroll .dm-table tfoot td{position:sticky; bottom:0; background:#fff; z-index:1;}
+  .yj-week-totals td{background:#F7F9FD; font-weight:700;}
   .dm-chart-wrap{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #eee; height:240px;}
   .dm-table input{
     width:100%;
@@ -2042,11 +2054,13 @@
 
       <div class="yj-section-title"><span class="yj-arrow">↓</span> Weekly Attendance (feeds the totals below)</div>
       <div class="dm-chart-wrap"><canvas id="dmChartCanvas" height="220"></canvas></div>
-      <table class="dm-table">
-        <thead><tr><th>Date</th><th>Week / Date Label</th><th>Participants</th><th>First Timers</th><th></th></tr></thead>
-        <tbody id="yjWeekBody">${weekRows}</tbody>
-        <tfoot><tr class="yj-week-totals"><td colspan="2">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
-      </table>
+      <div class="yj-table-scroll">
+        <table class="dm-table">
+          <thead><tr><th>Date</th><th>Week / Date Label</th><th>Participants</th><th>First Timers</th><th></th></tr></thead>
+          <tbody id="yjWeekBody">${weekRows}</tbody>
+          <tfoot><tr class="yj-week-totals"><td colspan="2">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
+        </table>
+      </div>
       <button class="dm-add-row" onclick="yjAddWeek()">+ Add Week / Date</button>
 
       <div class="yj-bottom-grid">
