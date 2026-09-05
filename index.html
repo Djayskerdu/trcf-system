@@ -2112,6 +2112,8 @@
       title: 'Youth Jam Leaders',
       addLabel: '+ Add Leader',
       addFn: 'yjAddLeader',
+      importLabel: '↻ Import from Roster',
+      importFn: 'yjImportLeadersFromRoster',
       bodyId: 'yjLeadersBody',
       emptyText: 'No leaders yet.',
       head: '<tr><th>Name</th><th></th></tr>',
@@ -2161,8 +2163,8 @@
       </table>` : `<div class="yj-empty-mini">${cfg.emptyText}</div>`}
       <button class="yj-add-btn" onclick="${cfg.addFn}()">${cfg.addLabel}</button>
       ${cfg.importFn ? `
-        <button class="yj-add-btn yj-import-btn" id="yjRosterImportBtn" onclick="${cfg.importFn}()">${cfg.importLabel}</button>
-        <div class="yj-empty-mini" id="yjRosterImportStatus" style="text-align:center;"></div>
+        <button class="yj-add-btn yj-import-btn" id="yjSubImportBtn" onclick="${cfg.importFn}()">${cfg.importLabel}</button>
+        <div class="yj-empty-mini" id="yjSubImportStatus" style="text-align:center;"></div>
       ` : ''}
     `;
   }
@@ -2377,8 +2379,8 @@
   // member you've since edited or removed here \u2014 the app stays the source
   // of truth for who's active once you've touched an entry manually.
   async function yjImportRosterFromSheet(){
-    const btn = document.getElementById('yjRosterImportBtn');
-    const status = document.getElementById('yjRosterImportStatus');
+    const btn = document.getElementById('yjSubImportBtn');
+    const status = document.getElementById('yjSubImportStatus');
     if(btn) btn.disabled = true;
     if(status) status.textContent = 'Importing from sheet…';
     try {
@@ -2426,14 +2428,14 @@
       renderYJDashboard();
       yjRenderSubModalContent();
       const msg = `Imported: ${added} new, ${updated} updated.`;
-      const freshStatus = document.getElementById('yjRosterImportStatus');
+      const freshStatus = document.getElementById('yjSubImportStatus');
       if(freshStatus) freshStatus.textContent = msg;
       logActivity('edit', 'Youth Jam Dashboard', `Imported YJM roster from sheet (${added} new, ${updated} updated)`);
     } catch(err){
-      const freshStatus = document.getElementById('yjRosterImportStatus');
+      const freshStatus = document.getElementById('yjSubImportStatus');
       if(freshStatus) freshStatus.textContent = 'Import failed: ' + err.message + ' (make sure the sheet is shared as "Anyone with the link can view").';
     } finally {
-      const freshBtn = document.getElementById('yjRosterImportBtn');
+      const freshBtn = document.getElementById('yjSubImportBtn');
       if(freshBtn) freshBtn.disabled = false;
     }
   }
@@ -2459,6 +2461,73 @@
     renderYJDashboard();
     yjRenderSubModalContent();
     logActivity('delete', 'Youth Jam Dashboard', 'Removed a Youth Jam leader');
+  }
+
+  // Names that show up in the roster's "Net. Leader" column but aren't
+  // actually a leader's name (placeholders from the sheet).
+  const YJ_NON_LEADER_VALUES = new Set(['', 'n/a', 'first timer', 'none']);
+
+  // Normalizes a name for duplicate-checking: trims, collapses repeated/odd
+  // whitespace, and lowercases, so "Jc Nazareno", "JC Nazareno", and
+  // "JC  Nazareno " are all recognized as the same person.
+  function yjNormalizeName(str){
+    return (str||'').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  // Builds the Youth Jam Leaders list from the distinct network leaders
+  // already present in the roster (List of YJM). Additive and non-
+  // destructive, same as the sheet import: adds any leader name found in
+  // the roster that isn't already in the leaders list (matched case- and
+  // whitespace-insensitively), and never removes or renames an existing
+  // entry. Also cleans up any duplicate leader entries already sitting in
+  // the list (e.g. from before this de-duping existed, or manual entries).
+  function yjImportLeadersFromRoster(){
+    const btn = document.getElementById('yjSubImportBtn');
+    const status = document.getElementById('yjSubImportStatus');
+    if(btn) btn.disabled = true;
+    try {
+      // Step 1: de-dupe leaders already in the list, keeping the first
+      // occurrence of each normalized name.
+      const seenExisting = new Set();
+      let deduped = 0;
+      yjData.leaders = yjData.leaders.filter(l => {
+        const key = yjNormalizeName(l.name);
+        if(key && seenExisting.has(key)){ deduped++; return false; }
+        if(key) seenExisting.add(key);
+        return true;
+      });
+
+      // Step 2: add any new leader names found in the roster.
+      const seenThisRun = new Set();
+      let added = 0;
+      yjData.roster.forEach(r => {
+        const name = (r.leader||'').trim();
+        const key = yjNormalizeName(name);
+        if(YJ_NON_LEADER_VALUES.has(key)) return;
+        if(seenExisting.has(key) || seenThisRun.has(key)) return;
+        yjData.leaders.push({ name });
+        seenExisting.add(key);
+        seenThisRun.add(key);
+        added++;
+      });
+
+      scheduleYJSave();
+      renderYJDashboard();
+      yjRenderSubModalContent();
+      const parts = [];
+      parts.push(added ? `${added} new leader${added===1?'':'s'} imported` : 'no new leaders found');
+      if(deduped) parts.push(`${deduped} duplicate${deduped===1?'':'s'} removed`);
+      const msg = parts.join(', ') + '.';
+      const freshStatus = document.getElementById('yjSubImportStatus');
+      if(freshStatus) freshStatus.textContent = msg;
+      logActivity('edit', 'Youth Jam Dashboard', `Imported ${added} Youth Jam leader(s) from the roster, removed ${deduped} duplicate(s)`);
+    } catch(err){
+      const freshStatus = document.getElementById('yjSubImportStatus');
+      if(freshStatus) freshStatus.textContent = 'Import failed: ' + err.message;
+    } finally {
+      const freshBtn = document.getElementById('yjSubImportBtn');
+      if(freshBtn) freshBtn.disabled = false;
+    }
   }
 
   // ---- VIP Log ----
