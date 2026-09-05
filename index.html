@@ -1833,6 +1833,10 @@
   // deletable afterward, and re-importing never overwrites local edits to
   // members not present in the sheet, nor deletes anyone.
   const YJ_ROSTER_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1dofQu2rCncROR-91po8JFj0z6nWSdWBbahpdDKC2GQg/gviz/tq?tqx=out:csv&gid=1341531498';
+  // "Attendance" tab of the same sheet \u2014 used to build the Youth Jam
+  // Leaders list from its LGLeader column (read by name, not gid, since we
+  // don't have a fixed gid for this tab).
+  const YJ_ATTENDANCE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1dofQu2rCncROR-91po8JFj0z6nWSdWBbahpdDKC2GQg/gviz/tq?tqx=out:csv&sheet=Attendance';
   let yjData = null;
   let yjSubModalKey = null;
   let yjSaveTimer = null;
@@ -2112,8 +2116,8 @@
       title: 'Youth Jam Leaders',
       addLabel: '+ Add Leader',
       addFn: 'yjAddLeader',
-      importLabel: '↻ Import from Roster',
-      importFn: 'yjImportLeadersFromRoster',
+      importLabel: '↻ Import from Attendance Sheet',
+      importFn: 'yjImportLeadersFromAttendance',
       bodyId: 'yjLeadersBody',
       emptyText: 'No leaders yet.',
       head: '<tr><th>Name</th><th></th></tr>',
@@ -2474,18 +2478,28 @@
     return (str||'').trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
-  // Builds the Youth Jam Leaders list from the distinct network leaders
-  // already present in the roster (List of YJM). Additive and non-
-  // destructive, same as the sheet import: adds any leader name found in
-  // the roster that isn't already in the leaders list (matched case- and
-  // whitespace-insensitively), and never removes or renames an existing
-  // entry. Also cleans up any duplicate leader entries already sitting in
-  // the list (e.g. from before this de-duping existed, or manual entries).
-  function yjImportLeadersFromRoster(){
+  // Builds the Youth Jam Leaders list from the distinct values in the
+  // LGLeader column of the public "Attendance" tab. Additive and non-
+  // destructive: adds any leader name found there that isn't already in
+  // the leaders list (matched trimmed/whitespace-collapsed/case-
+  // insensitively), never removes or renames an existing entry, and also
+  // cleans up any duplicates already sitting in the list.
+  async function yjImportLeadersFromAttendance(){
     const btn = document.getElementById('yjSubImportBtn');
     const status = document.getElementById('yjSubImportStatus');
     if(btn) btn.disabled = true;
+    if(status) status.textContent = 'Importing from Attendance sheet…';
     try {
+      const res = await fetch(YJ_ATTENDANCE_SHEET_CSV_URL);
+      if(!res.ok) throw new Error('Sheet request failed (' + res.status + ')');
+      const text = await res.text();
+      const table = yjParseCSV(text).filter(r => r.some(cell => (cell||'').trim() !== ''));
+      if(!table.length) throw new Error('No rows found in the Attendance sheet.');
+
+      const header = table[0].map(h => (h||'').trim().toLowerCase());
+      const leaderIdx = header.indexOf('lgleader');
+      if(leaderIdx === -1) throw new Error('Could not find an "LGLeader" column.');
+
       // Step 1: de-dupe leaders already in the list, keeping the first
       // occurrence of each normalized name.
       const seenExisting = new Set();
@@ -2497,19 +2511,19 @@
         return true;
       });
 
-      // Step 2: add any new leader names found in the roster.
+      // Step 2: add any new leader names found in the sheet.
       const seenThisRun = new Set();
       let added = 0;
-      yjData.roster.forEach(r => {
-        const name = (r.leader||'').trim();
+      for(let i = 1; i < table.length; i++){
+        const name = (table[i][leaderIdx] || '').trim();
         const key = yjNormalizeName(name);
-        if(YJ_NON_LEADER_VALUES.has(key)) return;
-        if(seenExisting.has(key) || seenThisRun.has(key)) return;
+        if(YJ_NON_LEADER_VALUES.has(key)) continue;
+        if(seenExisting.has(key) || seenThisRun.has(key)) continue;
         yjData.leaders.push({ name });
         seenExisting.add(key);
         seenThisRun.add(key);
         added++;
-      });
+      }
 
       scheduleYJSave();
       renderYJDashboard();
@@ -2520,10 +2534,10 @@
       const msg = parts.join(', ') + '.';
       const freshStatus = document.getElementById('yjSubImportStatus');
       if(freshStatus) freshStatus.textContent = msg;
-      logActivity('edit', 'Youth Jam Dashboard', `Imported ${added} Youth Jam leader(s) from the roster, removed ${deduped} duplicate(s)`);
+      logActivity('edit', 'Youth Jam Dashboard', `Imported ${added} Youth Jam leader(s) from the Attendance sheet, removed ${deduped} duplicate(s)`);
     } catch(err){
       const freshStatus = document.getElementById('yjSubImportStatus');
-      if(freshStatus) freshStatus.textContent = 'Import failed: ' + err.message;
+      if(freshStatus) freshStatus.textContent = 'Import failed: ' + err.message + ' (make sure the sheet is shared as "Anyone with the link can view").';
     } finally {
       const freshBtn = document.getElementById('yjSubImportBtn');
       if(freshBtn) freshBtn.disabled = false;
