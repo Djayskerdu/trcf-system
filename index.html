@@ -457,9 +457,18 @@
   .dm-content{
     padding:20px 22px 26px;
     overflow-y:auto;
-    overflow-x:auto;
+    overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
     flex:1;
+  }
+  /* Generic horizontal-scroll wrapper for any wide table inside a modal —
+     keeps headers/buttons/charts fixed in place while only the table
+     itself scrolls sideways on narrow screens. */
+  .table-scroll-x{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:10px;
+    max-width:100%;
   }
   .dm-header-sub{
     font-size:13px;
@@ -1172,6 +1181,11 @@
     .modal-title{font-size:14px;}
     .dm-content{padding:14px 14px 22px;}
 
+    /* Wide tables shrink a bit and scroll within their own box only —
+       the rest of the panel (headers, buttons, charts) stays put. */
+    .dm-table, .yj-table-scroll .dm-table{min-width:480px; font-size:12.5px;}
+    .table-scroll-x, .yj-table-scroll{border:1px solid var(--line);}
+
     .lock-box{padding:28px 22px;}
     .welcome-box{padding:32px 24px;}
   }
@@ -1250,6 +1264,7 @@
     </div>
     <span id="currentUserTag" class="admin-tag hidden"></span>
     <button class="tool-btn hidden" id="logoutBtn" onclick="logoutUser()" title="Sign out">🚪 Logout</button>
+    <button class="tool-btn" id="changeNameBtn" onclick="changeUsername()" title="Change your display name">✏️ Change Name</button>
     <button class="tool-btn" id="backupBtn" onclick="exportBackup()" title="Download a CSV backup of all editable data">⬇ Backup</button>
     <button class="tool-btn" id="activityLogBtn" onclick="openLogModal()" title="See who added, edited, or deleted entries">🗂 Activity Log</button>
     <button class="tool-btn" id="manageLeadersBtn" onclick="openManageLeadersModal()" title="Add, edit, or remove network leaders and their roles">👥 Manage Leaders</button>
@@ -1845,6 +1860,38 @@
     }
   }
 
+  // Change YOUR OWN display name (available to whoever is currently signed in).
+  // This is what you type at sign-in and what shows up in the Activity Log,
+  // so it has to stay unique across all leaders.
+  async function changeUsername(){
+    if(!currentUser) return;
+    const me = usersList.find(u => u.name.trim().toLowerCase() === currentUser.name.trim().toLowerCase());
+    if(!me){
+      alert('Could not find your account. Please reload and sign in again.');
+      return;
+    }
+    const newName = prompt('Enter your new name (this is what you\'ll type to sign in from now on):', me.name);
+    if(newName === null) return;
+    const trimmed = newName.trim();
+    if(!trimmed){
+      alert('Name cannot be empty. Nothing changed.');
+      return;
+    }
+    if(trimmed.toLowerCase() !== me.name.trim().toLowerCase() && findUserByName(trimmed)){
+      alert('That name is already taken by another leader. Please choose a different one.');
+      return;
+    }
+    try {
+      const updated = usersList.map(u => u.name.trim().toLowerCase() === me.name.trim().toLowerCase() ? { ...u, name: trimmed } : u);
+      await saveUsers(updated);
+      currentUser.name = trimmed;
+      applyRoleUI();
+      alert('Your name has been updated to "' + trimmed + '". Use this new name next time you sign in.');
+    } catch(e){
+      alert('Could not save your new name. Please check your connection and try again.');
+    }
+  }
+
   // ============ Manage Leaders (ADMIN only) ============
   function openManageLeadersModal(){
     if(!isAdminRole()){ return; }
@@ -1878,14 +1925,17 @@
         <td>${u.passwordHash ? 'Password set' : '<em>Not set yet</em>'}</td>
         <td>
           ${u.passwordHash ? `<button class="tool-btn" onclick="mlResetPassword(${idx})">Reset Password</button>` : ''}
+          <button class="tool-btn" onclick="mlRenameUser(${idx})">Rename</button>
           <button class="dm-row-delete" onclick="mlDeleteUser(${idx})" title="Remove leader">✕</button>
         </td>
       </tr>`).join('');
     body.innerHTML = `
-      <table class="dm-table">
-        <thead><tr><th>Name</th><th>Role</th><th>Password</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+      <div class="table-scroll-x">
+        <table class="dm-table">
+          <thead><tr><th>Name</th><th>Role</th><th>Password</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 
   async function mlChangeRole(idx, role){
@@ -1906,6 +1956,27 @@
     const updated = usersList.slice();
     updated[idx] = { ...updated[idx], passwordHash: null };
     await saveUsers(updated);
+    renderManageLeadersModal();
+  }
+
+  async function mlRenameUser(idx){
+    if(!isAdminRole()) return;
+    const current = usersList[idx];
+    const newName = prompt('New name for "' + current.name + '":', current.name);
+    if(newName === null) return;
+    const trimmed = newName.trim();
+    if(!trimmed){ alert('Name cannot be empty.'); return; }
+    if(trimmed.toLowerCase() !== current.name.trim().toLowerCase() && findUserByName(trimmed)){
+      alert('That name is already taken by another leader.');
+      return;
+    }
+    const updated = usersList.slice();
+    updated[idx] = { ...updated[idx], name: trimmed };
+    await saveUsers(updated);
+    if(currentUser && currentUser.name.trim().toLowerCase() === current.name.trim().toLowerCase()){
+      currentUser.name = trimmed;
+      applyRoleUI();
+    }
     renderManageLeadersModal();
   }
 
@@ -2356,11 +2427,13 @@
       <div class="dm-chart-wrap">
         <canvas id="dmChartCanvas" height="220"></canvas>
       </div>
-      <table class="dm-table">
-        <thead><tr>${thead}</tr></thead>
-        <tbody>${rowsHtml}</tbody>
-        <tfoot><tr class="dm-totals"><td>TOTAL</td>${totals}<td></td></tr></tfoot>
-      </table>
+      <div class="table-scroll-x">
+        <table class="dm-table">
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot><tr class="dm-totals"><td>TOTAL</td>${totals}<td></td></tr></tfoot>
+        </table>
+      </div>
       <button class="dm-add-row" onclick="addRow()">+ Add ${cfg.labelField.label}</button>
     `;
 
