@@ -378,6 +378,7 @@
     display:flex;
     flex-direction:column;
     box-shadow:0 24px 60px rgba(0,0,0,0.35);
+    position:relative;
   }
   .modal-header{
     display:flex;
@@ -428,6 +429,21 @@
     width:100%;
     border:none;
   }
+  .app-frame-hint{
+    position:absolute;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%);
+    background:#1E293B;
+    color:#fff;
+    font-size:12.5px;
+    padding:8px 14px;
+    border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    pointer-events:none;
+    z-index:5;
+  }
+  .app-frame-hint.hidden{display:none;}
   .modal-loading{
     position:absolute;
     top:50%;left:50%;
@@ -999,13 +1015,13 @@
         <div class="go">MANAGE →</div>
       </button>
 
-      <a class="tile" data-name="consolidation system" href="https://docs.google.com/spreadsheets/d/1CX6hzSMSW378Q40dxOQVf2uliarXi5ClHxBTVRrWLzg/edit?gid=10212988#gid=10212988" target="_blank" style="background:#1E4D91">
+      <a class="tile" data-name="consolidation system" href="https://trcf-consolidation.vercel.app" target="_blank" style="background:#1E4D91">
         <div>
           <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 12h6l3 8 3-16 3 8h3"/></svg></div>
           <div class="tile-name">Consolidation System</div>
-          <div class="tile-desc">Tracks and merges new members / follow-ups</div>
+          <div class="tile-desc">First Timers &amp; VIPs — log, assign &amp; follow up</div>
         </div>
-        <div class="go">OPEN SHEET →</div>
+        <div class="go">OPEN APP →</div>
       </a>
 
       <button type="button" class="tile tile-crud" data-module="lifeClass" data-name="lifeclass database" style="background:#1440B9">
@@ -1068,6 +1084,9 @@
       </div>
     </div>
     <iframe id="modalFrame" src="" loading="lazy"></iframe>
+    <div class="app-frame-hint hidden" id="appFrameHint">
+      Nothing showing above? This app may not allow embedding — use "Open App ↗" instead.
+    </div>
   </div>
 </div>
 
@@ -1336,15 +1355,32 @@
                  || el.getAttribute('data-name') || 'System';
     document.getElementById('modalTitle').textContent = name;
     document.getElementById('modalExternal').href = href;
+    // Sheets links say "Open in Sheets"; anything else (a live app, etc.)
+    // says "Open App" instead, since the label should describe what's
+    // actually being embedded below it.
+    document.getElementById('modalExternal').textContent = href.includes('docs.google.com') ? 'Open in Sheets ↗' : 'Open App ↗';
     document.getElementById('modalFrame').src = toEmbedUrl(href);
     document.getElementById('appModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Some external apps refuse to be embedded in an iframe (X-Frame-Options /
+    // frame-ancestors). We can't detect that directly (cross-origin), so as a
+    // safety net show a small hint after a few seconds pointing at "Open App ↗"
+    // in case the frame stayed blank.
+    clearTimeout(window.__appFrameHintTimer);
+    const hint = document.getElementById('appFrameHint');
+    if(hint) hint.classList.add('hidden');
+    window.__appFrameHintTimer = setTimeout(() => {
+      if(hint && !document.getElementById('appModal').classList.contains('hidden')) hint.classList.remove('hidden');
+    }, 4000);
   }
 
   function closeApp(){
     document.getElementById('appModal').classList.add('hidden');
     document.getElementById('modalFrame').src = '';
     document.body.style.overflow = '';
+    clearTimeout(window.__appFrameHintTimer);
+    const hint = document.getElementById('appFrameHint');
+    if(hint) hint.classList.add('hidden');
   }
 
   document.querySelectorAll('.tile-crud').forEach(el => {
