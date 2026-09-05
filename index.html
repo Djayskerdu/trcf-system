@@ -760,6 +760,10 @@
   .lock-submit:disabled{opacity:0.6; cursor:not-allowed;}
 
   /* Youth Jam dashboard */
+  .yj-stats-month-picker{display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+  .yj-stats-month-picker-label{font-family:'Poppins',sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--sub);}
+  .yj-stats-month-picker select{border:1.5px solid var(--line); background:#fff; color:var(--ink); font-weight:700; font-size:12.5px; padding:6px 10px; border-radius:8px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .yj-stats-month-picker select:focus{outline:none; border-color:var(--green); box-shadow:0 0 0 3px var(--ring);}
   .yj-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px;}
   .yj-stat-card{background:#F2F6FC; border:1.5px solid var(--line); border-radius:14px; padding:16px 18px;}
   .yj-stat-label{font-family:'Poppins',sans-serif; font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--sub); margin-bottom:6px;}
@@ -1595,8 +1599,8 @@
         yj.leaders.forEach(l => { csv += `"${String(l.name||'').replace(/"/g,'""')}"\n`; });
         csv += `\n"Youth Jam Dashboard — VIP Log"\n"Date","VIP Count"\n`;
         yj.vipLog.forEach(v => { csv += `"${v.date||''}","${v.count ?? ''}"\n`; });
-        csv += `\n"Youth Jam Dashboard — Monthly Attendance"\n"Month","Year","Participants","First Timers"\n`;
-        yj.weekly.forEach(w => { csv += `"${w.month ? YJ_MONTH_NAMES[w.month-1] : ''}","${w.year ?? ''}","${w.participants ?? ''}","${w.firstTimers ?? ''}"\n`; });
+        csv += `\n"Youth Jam Dashboard — Weekly Attendance"\n"Month","Year","Week / Label","Participants","First Timers"\n`;
+        yj.weekly.forEach(w => { csv += `"${w.month ? YJ_MONTH_NAMES[w.month-1] : ''}","${w.year ?? ''}","${String(w.label||'').replace(/"/g,'""')}","${w.participants ?? ''}","${w.firstTimers ?? ''}"\n`; });
       } catch(e){}
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -1826,6 +1830,8 @@
   let yjSelectedYear = null;
   let yjWeekSortKey = null;
   let yjWeekSortDir = 'asc';
+  let yjStatsMonth = null;   // 1-12, the month the top "MTD" stats are showing
+  let yjStatsYear = null;
 
   // Normalizes a weekly-attendance row to the {month, year, label, participants,
   // firstTimers} shape. Older saved data used a full "date" field instead of
@@ -1905,17 +1911,67 @@
   function yjCurrentMonthName(){
     return YJ_MONTH_NAMES[new Date().getMonth()];
   }
+  // Ensures yjStatsMonth/yjStatsYear have a value (defaults to today's real
+  // month/year the first time the dashboard loads), without overriding a
+  // choice the user already made from the picker.
+  function yjEnsureStatsMonth(){
+    if(yjStatsMonth == null) yjStatsMonth = new Date().getMonth() + 1;
+    if(yjStatsYear == null) yjStatsYear = new Date().getFullYear();
+  }
+  function yjStatsMonthKey(){
+    yjEnsureStatsMonth();
+    return yjStatsYear + '-' + String(yjStatsMonth).padStart(2,'0');
+  }
+  function yjStatsMonthName(){
+    yjEnsureStatsMonth();
+    return YJ_MONTH_NAMES[yjStatsMonth-1];
+  }
 
   function yjComputeStats(){
-    const curMonth = yjCurrentMonthKey();
-    const curMonthNum = new Date().getMonth() + 1;
-    const curYearNum = new Date().getFullYear();
+    yjEnsureStatsMonth();
+    const statMonthKey = yjStatsMonthKey();
+    const statMonthNum = yjStatsMonth;
+    const statYearNum = yjStatsYear;
     const activeLG = yjData.roster.length;
     const leadersCount = yjData.leaders.length;
-    const mtdVip = yjData.vipLog.reduce((sum,r) => yjMonthKeyOf(r.date) === curMonth ? sum + (Number(r.count)||0) : sum, 0);
+    const mtdVip = yjData.vipLog.reduce((sum,r) => yjMonthKeyOf(r.date) === statMonthKey ? sum + (Number(r.count)||0) : sum, 0);
     const allTimeVip = yjData.vipLog.reduce((sum,r) => sum + (Number(r.count)||0), 0);
-    const mtdAttenders = yjData.weekly.reduce((sum,r) => (Number(r.month) === curMonthNum && Number(r.year) === curYearNum) ? sum + (Number(r.participants)||0) + (Number(r.firstTimers)||0) : sum, 0);
+    const mtdAttenders = yjData.weekly.reduce((sum,r) => (Number(r.month) === statMonthNum && Number(r.year) === statYearNum) ? sum + (Number(r.participants)||0) + (Number(r.firstTimers)||0) : sum, 0);
     return { activeLG, leadersCount, mtdVip, allTimeVip, mtdAttenders };
+  }
+
+  // Years available in the "Viewing month" picker: every year that appears
+  // in the weekly/VIP data, plus today's real year and whatever is currently
+  // selected, so the dropdown always has somewhere sensible to land even on
+  // a brand-new dashboard.
+  function yjStatsYearOptions(){
+    const years = new Set([new Date().getFullYear()]);
+    if(yjStatsYear != null) years.add(yjStatsYear);
+    yjData.weekly.forEach(r => { if(r.year !== '' && r.year != null) years.add(Number(r.year)); });
+    yjData.vipLog.forEach(r => { const y = yjYearOf(r.date); if(y != null) years.add(y); });
+    return Array.from(years).sort((a,b) => a-b);
+  }
+
+  function yjSetStatsMonth(v){
+    yjStatsMonth = Number(v);
+    yjRefreshStatsPanel();
+    scheduleLog('edit', 'Changed the dashboard\'s viewing month');
+  }
+  function yjSetStatsYear(v){
+    yjStatsYear = Number(v);
+    yjRefreshStatsPanel();
+    scheduleLog('edit', 'Changed the dashboard\'s viewing year');
+  }
+
+  // Patches just the numbers/hints driven by the "Viewing month" picker,
+  // without rebuilding the whole dashboard (keeps scroll position, chart, etc.).
+  function yjRefreshStatsPanel(){
+    const stats = yjComputeStats();
+    const mtdVipEl = document.getElementById('yjStatMtdVip'); if(mtdVipEl) mtdVipEl.textContent = stats.mtdVip;
+    const mtdVipHint = document.getElementById('yjStatMtdVipHint'); if(mtdVipHint) mtdVipHint.textContent = yjStatsMonthName() + ' · ' + stats.allTimeVip + ' all-time';
+    const vipBadge = document.getElementById('yjCountVip'); if(vipBadge) vipBadge.textContent = stats.mtdVip;
+    const attEl = document.getElementById('yjStatMtdAttenders'); if(attEl) attEl.textContent = stats.mtdAttenders;
+    const attHint = document.getElementById('yjStatMtdAttendersHint'); if(attHint) attHint.textContent = 'total attenders in ' + yjStatsMonthName();
   }
 
   // Returns { [year]: { total, months: { [1..12]: total } } } from weekly rows that have a date set.
@@ -1959,6 +2015,7 @@
       <tr>
         <td><select onchange="yjUpdateWeek(${idx},'month',this.value,true)"><option value="">Month</option>${monthOptions}</select></td>
         <td><input type="number" value="${w.year ?? ''}" placeholder="${new Date().getFullYear()}" min="2000" max="2100" oninput="yjUpdateWeek(${idx},'year',this.value,true)"></td>
+        <td><input type="text" value="${yjEsc(w.label||'')}" placeholder="e.g. Aug 24\u201330" oninput="yjUpdateWeek(${idx},'label',this.value,false)"></td>
         <td><input type="number" value="${w.participants ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'participants',this.value,true)"></td>
         <td><input type="number" value="${w.firstTimers ?? ''}" placeholder="0" oninput="yjUpdateWeek(${idx},'firstTimers',this.value,true)"></td>
         <td><button class="dm-row-delete" onclick="yjDeleteWeek(${idx})" title="Delete">\u2715</button></td>
@@ -1983,7 +2040,7 @@
       const arrow = active ? (yjWeekSortDir === 'asc' ? ' \u25b2' : ' \u25bc') : '';
       return `<th class="yj-sortable${active ? ' active' : ''}" onclick="yjSortWeek('${key}')" title="Sort by ${label}">${label}${arrow}</th>`;
     };
-    return `<tr>${col('month','Month')}${col('year','Year')}${col('participants','Participants')}${col('firstTimers','First Timers')}<th></th></tr>`;
+    return `<tr>${col('month','Month')}${col('year','Year')}${col('label','Week / Date Label')}${col('participants','Participants')}${col('firstTimers','First Timers')}<th></th></tr>`;
   }
 
   function yjSortWeek(key){
@@ -2108,6 +2165,16 @@
     content.innerHTML = `
       <p class="dm-header-sub">Top numbers update automatically from the lists below — nothing to add by hand up here.</p>
 
+      <div class="yj-stats-month-picker">
+        <span class="yj-stats-month-picker-label">Viewing month:</span>
+        <select id="yjStatsMonthSelect" onchange="yjSetStatsMonth(this.value)">
+          ${YJ_MONTH_NAMES.map((name,i) => `<option value="${i+1}" ${yjStatsMonth===i+1?'selected':''}>${name}</option>`).join('')}
+        </select>
+        <select id="yjStatsYearSelect" onchange="yjSetStatsYear(this.value)">
+          ${yjStatsYearOptions().map(y => `<option value="${y}" ${yjStatsYear===y?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+
       <div class="yj-stats">
         <div class="yj-stat-card">
           <div class="yj-stat-label">Active LG Members</div>
@@ -2122,7 +2189,7 @@
         <div class="yj-stat-card">
           <div class="yj-stat-label">MTD VIP's</div>
           <div class="yj-stat-value" id="yjStatMtdVip">${stats.mtdVip}</div>
-          <div class="yj-stat-hint" id="yjStatMtdVipHint">${yjCurrentMonthName()} · ${stats.allTimeVip} all-time</div>
+          <div class="yj-stat-hint" id="yjStatMtdVipHint">${yjStatsMonthName()} · ${stats.allTimeVip} all-time</div>
         </div>
       </div>
 
@@ -2156,22 +2223,22 @@
         </div>
       </div>
 
-      <div class="yj-section-title"><span class="yj-arrow">↓</span> Monthly Attendance (feeds the totals below)</div>
+      <div class="yj-section-title"><span class="yj-arrow">↓</span> Weekly Attendance (feeds the totals below)</div>
       <div class="dm-chart-wrap"><canvas id="dmChartCanvas" height="220"></canvas></div>
       <div class="yj-table-scroll">
         <table class="dm-table">
           <thead id="yjWeekHead">${yjWeekHeaderHtml()}</thead>
           <tbody id="yjWeekBody">${weekRows}</tbody>
-          <tfoot><tr class="yj-week-totals"><td colspan="2">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
+          <tfoot><tr class="yj-week-totals"><td colspan="3">TOTAL</td><td>${weekParticipantsTotal}</td><td>${weekFirstTimersTotal}</td><td></td></tr></tfoot>
         </table>
       </div>
-      <button class="dm-add-row" onclick="yjAddWeek()">+ Add Month</button>
+      <button class="dm-add-row" onclick="yjAddWeek()">+ Add Week / Date</button>
 
       <div class="yj-bottom-grid">
         <div class="yj-stat-card">
           <div class="yj-stat-label">YJM Month-To-Date</div>
           <div class="yj-stat-value" id="yjStatMtdAttenders">${stats.mtdAttenders}</div>
-          <div class="yj-stat-hint">total attenders in ${yjCurrentMonthName()}</div>
+          <div class="yj-stat-hint" id="yjStatMtdAttendersHint">total attenders in ${yjStatsMonthName()}</div>
         </div>
         <div class="yj-stat-card" id="yjYtdPanel"></div>
       </div>
@@ -2186,7 +2253,7 @@
   function yjRenderChart(){
     const canvas = document.getElementById('dmChartCanvas');
     if(!canvas || typeof Chart === 'undefined') return;
-    const labels = yjData.weekly.map(r => (r.month && r.year) ? `${YJ_MONTH_NAMES[r.month-1]} ${r.year}` : '(unnamed)');
+    const labels = yjData.weekly.map(r => r.label || ((r.month && r.year) ? `${YJ_MONTH_NAMES[r.month-1]} ${r.year}` : '(unnamed)'));
     const datasets = [
       { label: 'Participants', data: yjData.weekly.map(r => Number(r.participants)||0), backgroundColor: YJ_CHART_COLORS[0] },
       { label: 'First Timers', data: yjData.weekly.map(r => Number(r.firstTimers)||0), backgroundColor: YJ_CHART_COLORS[1] }
@@ -2290,7 +2357,7 @@
   function yjPatchVipStats(){
     const stats = yjComputeStats();
     const val = document.getElementById('yjStatMtdVip'); if(val) val.textContent = stats.mtdVip;
-    const hint = document.getElementById('yjStatMtdVipHint'); if(hint) hint.textContent = yjCurrentMonthName() + ' · ' + stats.allTimeVip + ' all-time';
+    const hint = document.getElementById('yjStatMtdVipHint'); if(hint) hint.textContent = yjStatsMonthName() + ' · ' + stats.allTimeVip + ' all-time';
     const badge = document.getElementById('yjCountVip'); if(badge) badge.textContent = stats.mtdVip;
     const sub = document.getElementById('yjVipSubtotal'); if(sub) sub.textContent = 'Total logged: ' + stats.allTimeVip;
   }
@@ -2334,20 +2401,20 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
-    scheduleLog('edit', 'Updated a monthly attendance entry');
+    scheduleLog('edit', 'Updated a weekly attendance entry');
   }
   function yjAddWeek(){
-    yjData.weekly.push({ month:'', year:'', participants:'', firstTimers:'' });
+    yjData.weekly.push({ month:'', year:'', label:'', participants:'', firstTimers:'' });
     scheduleYJSave();
     yjRenderWeekBody();
     yjUpdateWeeklyTotalsRow();
     yjRenderChart();
     yjRenderYtd();
-    logActivity('add', 'Youth Jam Dashboard', 'Added a monthly attendance entry');
+    logActivity('add', 'Youth Jam Dashboard', 'Added a weekly attendance entry');
     setTimeout(() => { const s = document.querySelectorAll('#yjWeekBody select'); if(s.length) s[s.length-1].focus(); }, 0);
   }
   function yjDeleteWeek(idx){
-    if(!confirm('Delete this month? This cannot be undone.')) return;
+    if(!confirm('Delete this week? This cannot be undone.')) return;
     yjData.weekly.splice(idx,1);
     scheduleYJSave();
     yjRenderWeekBody();
@@ -2356,7 +2423,7 @@
     const mtdEl = document.getElementById('yjStatMtdAttenders');
     if(mtdEl) mtdEl.textContent = yjComputeStats().mtdAttenders;
     yjRenderYtd();
-    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a monthly attendance entry');
+    logActivity('delete', 'Youth Jam Dashboard', 'Deleted a weekly attendance entry');
   }
 
   // Lightweight, debounced activity-log entry for per-keystroke edits (avoids
