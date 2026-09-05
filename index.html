@@ -736,6 +736,11 @@
   .yj-flow-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; align-items:start;}
   .yj-panel{background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:14px 16px 16px;}
   .yj-panel-title{display:flex; align-items:center; gap:8px; font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:var(--ink);}
+  .yj-panel-toggle{cursor:pointer; user-select:none;}
+  .yj-panel-chevron{display:inline-block; font-size:10px; color:var(--sub); transition:transform .15s ease; transform:rotate(0deg);}
+  .yj-panel-chevron.open{transform:rotate(90deg); color:var(--ink);}
+  .yj-tap-hint{cursor:pointer; text-decoration:underline; text-underline-offset:2px;}
+  .yj-tap-hint:hover{color:var(--ink);}
   .yj-panel-count{background:var(--green); color:#fff; font-size:11px; font-weight:800; border-radius:999px; padding:2px 9px; min-width:20px; text-align:center;}
   .yj-panel-sub{font-size:11px; color:var(--sub); margin:2px 0 10px;}
   .yj-mini-table{width:100%; border-collapse:collapse; font-size:12.5px;}
@@ -1761,6 +1766,7 @@
   const YJ_KEY = 'module:youthJam';
   const YJ_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   let yjData = null;
+  let yjPanelOpen = { roster:false, leaders:false, vip:false };
   let yjSaveTimer = null;
   let yjSelectedYear = null;
 
@@ -1866,10 +1872,16 @@
 
     yjData = await loadYJData();
     yjSelectedYear = null;
+    yjPanelOpen = { roster:false, leaders:false, vip:false };
     renderYJDashboard();
   }
 
   function yjEsc(str){ return escapeAttr(str); }
+
+  function yjTogglePanel(key){
+    yjPanelOpen[key] = !yjPanelOpen[key];
+    renderYJDashboard();
+  }
 
   function renderYJDashboard(){
     if(currentChart){ currentChart.destroy(); currentChart = null; }
@@ -1931,36 +1943,45 @@
 
       <div class="yj-flow-grid">
         <div class="yj-panel">
-          <div class="yj-panel-title">List of YJM <span class="yj-panel-count" id="yjCountRoster">${yjData.roster.length}</span></div>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('roster')">
+            <span class="yj-panel-chevron ${yjPanelOpen.roster?'open':''}">▸</span>
+            List of YJM <span class="yj-panel-count" id="yjCountRoster">${yjData.roster.length}</span>
+          </div>
           <div class="yj-panel-sub">Name &amp; network leader</div>
-          ${yjData.roster.length ? `
+          ${yjPanelOpen.roster ? (yjData.roster.length ? `
           <table class="yj-mini-table">
             <thead><tr><th>Name</th><th>Net. Leader</th><th></th></tr></thead>
             <tbody id="yjRosterBody">${rosterRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No members yet.</div>`}
-          <button class="yj-add-btn" onclick="yjAddRoster()">+ Add Member</button>
+          </table>` : `<div class="yj-empty-mini">No members yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('roster')">Tap to view list</div>`}
+          ${yjPanelOpen.roster ? `<button class="yj-add-btn" onclick="yjAddRoster()">+ Add Member</button>` : ''}
         </div>
 
         <div class="yj-panel">
-          <div class="yj-panel-title">Youth Jam Leaders <span class="yj-panel-count" id="yjCountLeaders">${yjData.leaders.length}</span></div>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('leaders')">
+            <span class="yj-panel-chevron ${yjPanelOpen.leaders?'open':''}">▸</span>
+            Youth Jam Leaders <span class="yj-panel-count" id="yjCountLeaders">${yjData.leaders.length}</span>
+          </div>
           <div class="yj-panel-sub">Names</div>
-          ${yjData.leaders.length ? `
+          ${yjPanelOpen.leaders ? (yjData.leaders.length ? `
           <table class="yj-mini-table">
             <thead><tr><th>Name</th><th></th></tr></thead>
             <tbody id="yjLeadersBody">${leaderRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No leaders yet.</div>`}
-          <button class="yj-add-btn" onclick="yjAddLeader()">+ Add Leader</button>
+          </table>` : `<div class="yj-empty-mini">No leaders yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('leaders')">Tap to view list</div>`}
+          ${yjPanelOpen.leaders ? `<button class="yj-add-btn" onclick="yjAddLeader()">+ Add Leader</button>` : ''}
         </div>
 
         <div class="yj-panel">
-          <div class="yj-panel-title">VIP Log <span class="yj-panel-count" id="yjCountVip">${stats.mtdVip}</span></div>
+          <div class="yj-panel-title yj-panel-toggle" onclick="yjTogglePanel('vip')">
+            <span class="yj-panel-chevron ${yjPanelOpen.vip?'open':''}">▸</span>
+            VIP Log <span class="yj-panel-count" id="yjCountVip">${stats.mtdVip}</span>
+          </div>
           <div class="yj-panel-sub">VIP's per Youth Jam date</div>
-          ${yjData.vipLog.length ? `
+          ${yjPanelOpen.vip ? (yjData.vipLog.length ? `
           <table class="yj-mini-table">
             <thead><tr><th>Date</th><th>VIP's</th><th></th></tr></thead>
             <tbody id="yjVipBody">${vipRows}</tbody>
-          </table>` : `<div class="yj-empty-mini">No dates logged yet.</div>`}
-          <button class="yj-add-btn" onclick="yjAddVip()">+ Add Date</button>
+          </table>` : `<div class="yj-empty-mini">No dates logged yet.</div>`) : `<div class="yj-empty-mini yj-tap-hint" onclick="yjTogglePanel('vip')">Tap to view list</div>`}
+          ${yjPanelOpen.vip ? `<button class="yj-add-btn" onclick="yjAddVip()">+ Add Date</button>` : ''}
           <div class="yj-subtotal" id="yjVipSubtotal">Total logged: ${stats.allTimeVip}</div>
         </div>
       </div>
