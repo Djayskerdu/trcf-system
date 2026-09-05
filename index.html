@@ -742,8 +742,7 @@
   }
 
   .welcome-box{
-    background:rgba(255,255,255,0.97);
-    backdrop-filter:blur(12px);
+    background:#fff;
     padding:48px 40px;
     border-radius:24px;
     max-width:420px;
@@ -880,7 +879,7 @@
   .lock-overlay.hidden{display:none;}
 
   /* Subtle orb behind lock box */
-  .lock-overlay::before{
+  .lock-overlay:not(.hidden)::before{
     content:'';
     position:absolute;
     width:500px;height:500px;
@@ -892,8 +891,7 @@
   }
 
   .lock-box{
-    background:rgba(255,255,255,0.98);
-    backdrop-filter:blur(10px);
+    background:#fff;
     padding:40px 36px;
     border-radius:20px;
     max-width:340px;
@@ -977,32 +975,28 @@
   .lock-submit:disabled{opacity:0.55; cursor:not-allowed; transform:none;}
 
   /* ====== Main Dashboard Animations ====== */
-  /* Header */
-  header{
-    animation:headerSlideDown 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s both;
+  /* JS adds .dash-revealed to body after unlock — animations only run then */
+  .dash-revealed header{
+    animation:headerSlideDown 0.55s cubic-bezier(0.22,1,0.36,1) 0.05s both;
   }
-  .meta span{
-    animation:countPop 0.6s cubic-bezier(0.22,1,0.36,1) 0.5s both;
+  .dash-revealed .meta span{
+    animation:countPop 0.6s cubic-bezier(0.22,1,0.36,1) 0.3s both;
   }
-
-  /* Controls bar */
-  .controls{
-    animation:controlsFadeIn 0.5s ease 0.3s both;
+  .dash-revealed .controls{
+    animation:controlsFadeIn 0.5s ease 0.15s both;
   }
+  .dash-revealed section:nth-of-type(1){animation:sectionFadeUp 0.5s ease 0.2s both;}
+  .dash-revealed section:nth-of-type(2){animation:sectionFadeUp 0.5s ease 0.32s both;}
+  .dash-revealed section:nth-of-type(3){animation:sectionFadeUp 0.5s ease 0.44s both;}
 
-  /* Sections stagger */
-  section:nth-of-type(1){animation:sectionFadeUp 0.55s ease 0.35s both;}
-  section:nth-of-type(2){animation:sectionFadeUp 0.55s ease 0.5s both;}
-  section:nth-of-type(3){animation:sectionFadeUp 0.55s ease 0.65s both;}
-
-  /* Tiles stagger */
-  .tile:nth-child(1){animation:tileFadeUp 0.45s ease 0.45s both;}
-  .tile:nth-child(2){animation:tileFadeUp 0.45s ease 0.55s both;}
-  .tile:nth-child(3){animation:tileFadeUp 0.45s ease 0.65s both;}
-  .tile:nth-child(4){animation:tileFadeUp 0.45s ease 0.75s both;}
-  .tile:nth-child(5){animation:tileFadeUp 0.45s ease 0.85s both;}
-  .tile:nth-child(6){animation:tileFadeUp 0.45s ease 0.95s both;}
-  .tile:nth-child(n+7){animation:tileFadeUp 0.45s ease 1.0s both;}
+  /* Tiles stagger — only after reveal */
+  .dash-revealed .tile:nth-child(1){animation:tileFadeUp 0.4s ease 0.28s both;}
+  .dash-revealed .tile:nth-child(2){animation:tileFadeUp 0.4s ease 0.36s both;}
+  .dash-revealed .tile:nth-child(3){animation:tileFadeUp 0.4s ease 0.44s both;}
+  .dash-revealed .tile:nth-child(4){animation:tileFadeUp 0.4s ease 0.52s both;}
+  .dash-revealed .tile:nth-child(5){animation:tileFadeUp 0.4s ease 0.60s both;}
+  .dash-revealed .tile:nth-child(6){animation:tileFadeUp 0.4s ease 0.68s both;}
+  .dash-revealed .tile:nth-child(n+7){animation:tileFadeUp 0.4s ease 0.72s both;}
 
   /* Tile enhanced hover */
   .tile{
@@ -1014,11 +1008,11 @@
   }
 
   /* Section head num badge pulse-in */
-  .section-head .num{
+  .dash-revealed .section-head .num{
     animation:lIconBounce 0.5s ease both;
   }
-  section:nth-of-type(1) .section-head .num{animation-delay:0.45s;}
-  section:nth-of-type(2) .section-head .num{animation-delay:0.6s;}
+  .dash-revealed section:nth-of-type(1) .section-head .num{animation-delay:0.25s;}
+  .dash-revealed section:nth-of-type(2) .section-head .num{animation-delay:0.38s;}
 
   /* Search input smooth focus */
   .search input{
@@ -1581,13 +1575,19 @@
 
   function unlockApp(){
     const overlay = document.getElementById('lockOverlay');
-    overlay.style.transition = 'opacity 0.4s ease';
+    overlay.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
     overlay.style.opacity = '0';
+    overlay.style.transform = 'scale(1.04)';
+    overlay.style.pointerEvents = 'none';
     setTimeout(()=>{
       overlay.classList.add('hidden');
       overlay.style.opacity = '';
+      overlay.style.transform = '';
       overlay.style.transition = '';
-    }, 400);
+      overlay.style.pointerEvents = '';
+      // Trigger dashboard entrance animations only after login
+      document.body.classList.add('dash-revealed');
+    }, 360);
   }
 
   // ============ Welcome screen (shown first, before the login/access lock) ============
